@@ -45,5 +45,18 @@ export const API_ENDPOINTS = {
   },
   users: {
     list: `${API_URL}/users`,
+    create: `${API_URL}/users`,
+    detail: (id: string) => `${API_URL}/users/${id}`,
+    update: (id: string) => `${API_URL}/users/${id}`,
+    delete: (id: string) => `${API_URL}/users/${id}`,
+    changePassword: (id: string) => `${API_URL}/users/${id}/change-password`,
+    changeRole: (id: string) => `${API_URL}/users/${id}/role`,
+    invite: `${API_URL}/users/invite`,
+    invitations: `${API_URL}/users/invitations`,
+    cancelInvitation: (id: string) => `${API_URL}/users/invitations/${id}`,
+  },
+  invitations: {
+    verify: (token: string) => `${API_URL}/auth/verify-invite/${token}`,
+    accept: `${API_URL}/auth/accept-invite`,
   },
 } as const;
