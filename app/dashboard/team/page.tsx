@@ -201,11 +201,11 @@ export default function TeamPage() {
         </div>
         <Table aria-label="Usuarios" removeWrapper>
           <TableHeader>
-            <TableColumn>USUARIO</TableColumn>
-            <TableColumn>EMAIL</TableColumn>
-            <TableColumn>ROL</TableColumn>
-            <TableColumn>FECHA REGISTRO</TableColumn>
-            <TableColumn>ACCIONES</TableColumn>
+            <TableColumn key="user">USUARIO</TableColumn>
+            <TableColumn key="email">EMAIL</TableColumn>
+            <TableColumn key="role">ROL</TableColumn>
+            <TableColumn key="date">FECHA REGISTRO</TableColumn>
+            <TableColumn key="actions">ACCIONES</TableColumn>
           </TableHeader>
           <TableBody items={users} isLoading={loading} emptyContent="No hay usuarios">
             {(user) => (
@@ -283,11 +283,11 @@ export default function TeamPage() {
           </div>
           <Table aria-label="Invitaciones" removeWrapper>
             <TableHeader>
-              <TableColumn>USUARIO</TableColumn>
-              <TableColumn>EMAIL</TableColumn>
-              <TableColumn>ROL</TableColumn>
-              <TableColumn>EXPIRA</TableColumn>
-              <TableColumn>ACCIONES</TableColumn>
+              <TableColumn key="user">USUARIO</TableColumn>
+              <TableColumn key="email">EMAIL</TableColumn>
+              <TableColumn key="role">ROL</TableColumn>
+              <TableColumn key="expires">EXPIRA</TableColumn>
+              <TableColumn key="actions">ACCIONES</TableColumn>
             </TableHeader>
             <TableBody items={invitations}>
               {(invite) => (
