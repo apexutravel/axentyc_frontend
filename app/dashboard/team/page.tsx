@@ -207,8 +207,8 @@ export default function TeamPage() {
             <TableColumn key="date">FECHA REGISTRO</TableColumn>
             <TableColumn key="actions">ACCIONES</TableColumn>
           </TableHeader>
-          <TableBody items={users} isLoading={loading} emptyContent="No hay usuarios">
-            {(user) => (
+          <TableBody isLoading={loading} emptyContent="No hay usuarios">
+            {users.map((user) => (
               <TableRow key={user._id}>
                 <TableCell>
                   <div className="font-medium">
@@ -270,7 +270,7 @@ export default function TeamPage() {
                   </Dropdown>
                 </TableCell>
               </TableRow>
-            )}
+            ))}
           </TableBody>
         </Table>
       </div>
@@ -289,8 +289,8 @@ export default function TeamPage() {
               <TableColumn key="expires">EXPIRA</TableColumn>
               <TableColumn key="actions">ACCIONES</TableColumn>
             </TableHeader>
-            <TableBody items={invitations}>
-              {(invite) => (
+            <TableBody emptyContent="No hay invitaciones pendientes">
+              {invitations.map((invite) => (
                 <TableRow key={invite._id}>
                   <TableCell>
                     {invite.firstName} {invite.lastName}
@@ -326,7 +326,7 @@ export default function TeamPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              )}
+              ))}
             </TableBody>
           </Table>
         </div>
