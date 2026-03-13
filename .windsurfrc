@@ -1,0 +1,10 @@
+{
+  "indexLargeRepos": false,
+  "maxFileSize": 2000000,
+  "exclude": [
+    "node_modules",
+    ".next",
+    "dist",
+    ".git"
+  ]
+}
