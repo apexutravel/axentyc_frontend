@@ -1,13 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
-import { Button } from "@heroui/button";
-import { Chip } from "@heroui/chip";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
-import { Input } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
+import {
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+  Button,
+  Chip,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Input,
+  Select,
+  SelectItem,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+  useDisclosure,
+} from "@heroui/react";
 import { UserPlus, MoreVertical, Shield, Key, Trash2, Copy, CheckCircle } from "lucide-react";
 import { api } from "@/lib/api";
 import { API_ENDPOINTS } from "@/config/api";
@@ -97,7 +113,7 @@ export default function TeamPage() {
       inviteModal.onClose();
       loadData();
     } catch (error: any) {
-      addToast({ title: error.response?.data?.message || "Error al invitar", color: "danger" });
+      showToast(error.response?.data?.message || "Error al invitar");
     }
   };
 
