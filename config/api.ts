@@ -59,4 +59,17 @@ export const API_ENDPOINTS = {
     verify: (token: string) => `${API_URL}/auth/verify-invite/${token}`,
     accept: `${API_URL}/auth/accept-invite`,
   },
+  tenants: {
+    current: `${API_URL}/tenants/current`,
+    update: (id: string) => `${API_URL}/tenants/${id}`,
+  },
+  chatWidget: {
+    get: `${API_URL}/chat-widget`,
+    save: `${API_URL}/chat-widget/save`,
+    script: `${API_URL}/chat-widget/script`,
+    regenerate: `${API_URL}/chat-widget/regenerate`,
+    publicConfig: (widgetId: string) => `${API_URL}/chat-widget/config/${widgetId}`,
+    sendMessage: `${API_URL}/chat-widget/message`,
+    messages: (widgetId: string) => `${API_URL}/chat-widget/messages/${widgetId}`,
+  },
 } as const;

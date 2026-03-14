@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
@@ -7,10 +8,66 @@ import { Switch } from "@heroui/switch";
 import { Select, SelectItem } from "@heroui/select";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Divider } from "@heroui/divider";
+import { Textarea } from "@heroui/input";
 import { motion } from "framer-motion";
-import { Save } from "lucide-react";
+import { Save, Copy, Check, Code2, Globe } from "lucide-react";
+import { api } from "@/lib/api";
+import { API_ENDPOINTS } from "@/config/api";
+import { addToast } from "@heroui/toast";
 
 export default function SettingsPage() {
+  const [widgetEnabled, setWidgetEnabled] = useState(false);
+  const [widgetScript, setWidgetScript] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    loadWidgetConfig();
+  }, []);
+
+  const loadWidgetConfig = async () => {
+    try {
+      const response = await api.get(API_ENDPOINTS.chatWidget.get);
+      const config = response.data?.data || response.data;
+      if (config) {
+        setWidgetScript(config.script || "");
+      }
+    } catch (error) {
+      console.error("Error loading widget config:", error);
+    }
+  };
+
+  const handleCopyScript = () => {
+    navigator.clipboard.writeText(widgetScript);
+    setCopied(true);
+    addToast({ title: "Código copiado al portapapeles", color: "success" });
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleToggleWidget = async (enabled: boolean) => {
+    setWidgetEnabled(enabled);
+    setLoading(true);
+    try {
+      // Aquí actualizarías el tenant settings
+      await api.patch(API_ENDPOINTS.tenants.update("current"), {
+        settings: {
+          widgetEnabledOnLanding: enabled,
+        },
+      });
+      addToast({
+        title: enabled
+          ? "Widget activado en el landing"
+          : "Widget desactivado en el landing",
+        color: "success",
+      });
+    } catch (error) {
+      addToast({ title: "Error al actualizar configuración", color: "danger" });
+      setWidgetEnabled(!enabled);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <motion.div
       animate={{ opacity: 1, y: 0 }}
@@ -184,6 +241,82 @@ export default function SettingsPage() {
                 <p className="text-sm text-default-500">
                   Gestiona tu plan de suscripci&oacute;n y m&eacute;todos de pago.
                 </p>
+              </CardBody>
+            </Card>
+          </div>
+        </Tab>
+
+        <Tab key="widget" title="Widget">
+          <div className="space-y-6 mt-4">
+            <Card className="border border-divider">
+              <CardHeader className="flex items-center gap-2">
+                <Globe className="text-primary" size={20} />
+                <h3 className="text-lg font-semibold">Widget en Landing</h3>
+              </CardHeader>
+              <CardBody className="gap-4">
+                <div className="flex items-center justify-between p-4 bg-default-50 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium">Activar widget en el landing público</p>
+                    <p className="text-xs text-default-400 mt-1">
+                      El widget de chat aparecerá automáticamente en tu página de inicio
+                    </p>
+                  </div>
+                  <Switch
+                    isSelected={widgetEnabled}
+                    onValueChange={handleToggleWidget}
+                    isDisabled={loading}
+                    size="lg"
+                  />
+                </div>
+                
+                {widgetEnabled && (
+                  <div className="p-4 bg-success-50 border border-success-200 rounded-lg">
+                    <p className="text-sm text-success-700 flex items-center gap-2">
+                      <Check size={16} />
+                      Widget activo en tu landing
+                    </p>
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+
+            <Card className="border border-divider">
+              <CardHeader className="flex items-center gap-2">
+                <Code2 className="text-primary" size={20} />
+                <h3 className="text-lg font-semibold">Código de Instalación</h3>
+              </CardHeader>
+              <CardBody className="gap-4">
+                <p className="text-sm text-default-500">
+                  Copia este código para instalar el widget en cualquier sitio web externo.
+                </p>
+                
+                {widgetScript ? (
+                  <>
+                    <Textarea
+                      value={widgetScript}
+                      readOnly
+                      minRows={8}
+                      variant="bordered"
+                      classNames={{
+                        input: "font-mono text-xs",
+                      }}
+                    />
+                    <Button
+                      color="primary"
+                      startContent={copied ? <Check size={16} /> : <Copy size={16} />}
+                      onClick={handleCopyScript}
+                      className="w-fit"
+                    >
+                      {copied ? "¡Copiado!" : "Copiar Código"}
+                    </Button>
+                  </>
+                ) : (
+                  <div className="p-4 bg-warning-50 border border-warning-200 rounded-lg">
+                    <p className="text-sm text-warning-700">
+                      No hay configuración de widget. Ve a la sección de Chat Widget para configurarlo.
+                    </p>
+                  </div>
+                )}
               </CardBody>
             </Card>
           </div>
