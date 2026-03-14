@@ -20,23 +20,23 @@ export const siteConfig = {
     },
     {
       label: "Inbox",
-      href: "/dashboard/inbox",
+      href: "/inbox",
     },
     {
       label: "Contacts",
-      href: "/dashboard/contacts",
+      href: "/contacts",
     },
     {
       label: "Leads",
-      href: "/dashboard/leads",
+      href: "/leads",
     },
     {
       label: "Deals",
-      href: "/dashboard/deals",
+      href: "/deals",
     },
     {
       label: "Settings",
-      href: "/dashboard/settings",
+      href: "/settings",
     },
     {
       label: "Logout",
@@ -50,48 +50,53 @@ export const siteConfig = {
       icon: "LayoutDashboard",
     },
     {
+      label: "Live Chat",
+      href: "/live-chat",
+      icon: "MessagesSquare",
+    },
+    {
       label: "Inbox",
-      href: "/dashboard/inbox",
+      href: "/inbox",
       icon: "MessageSquare",
     },
     {
       label: "Contacts",
-      href: "/dashboard/contacts",
+      href: "/contacts",
       icon: "Users",
     },
     {
       label: "Leads",
-      href: "/dashboard/leads",
+      href: "/leads",
       icon: "UserPlus",
     },
     {
       label: "Deals",
-      href: "/dashboard/deals",
+      href: "/deals",
       icon: "Handshake",
     },
     {
+      label: "Team",
+      href: "/team",
+      icon: "Users",
+    },
+    {
       label: "Automations",
-      href: "/dashboard/automations",
+      href: "/automations",
       icon: "Zap",
     },
     {
       label: "Analytics",
-      href: "/dashboard/analytics",
+      href: "/analytics",
       icon: "BarChart3",
     },
     {
-      label: "Live Chat",
-      href: "/dashboard/live-chat",
-      icon: "MessagesSquare",
-    },
-    {
       label: "Integrations",
-      href: "/dashboard/integrations",
+      href: "/integrations",
       icon: "Plug",
     },
     {
       label: "Settings",
-      href: "/dashboard/settings",
+      href: "/settings",
       icon: "Settings",
     },
   ],
