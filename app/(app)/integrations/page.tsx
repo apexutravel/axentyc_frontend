@@ -48,6 +48,7 @@ interface WidgetConfig {
   avatarUrl?: string;
   allowedDomains: string[];
   showBranding: boolean;
+  showOnLanding: boolean;
   collectEmail: boolean;
   collectPhone: boolean;
   offlineMessage?: string;
@@ -66,6 +67,7 @@ const defaultConfig: WidgetConfig = {
   avatarUrl: "",
   allowedDomains: [],
   showBranding: true,
+  showOnLanding: false,
   collectEmail: true,
   collectPhone: false,
   offlineMessage:
@@ -192,7 +194,7 @@ export default function IntegrationsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const payload: Record<string, any> = {
+      const payload: any = {
         title: config.title,
         subtitle: config.subtitle,
         welcomeMessage: config.welcomeMessage,
@@ -200,6 +202,7 @@ export default function IntegrationsPage() {
         textColor: config.textColor,
         position: config.position,
         showBranding: config.showBranding,
+        showOnLanding: config.showOnLanding,
         collectEmail: config.collectEmail,
         collectPhone: config.collectPhone,
         enabled: config.enabled,
@@ -733,6 +736,23 @@ export default function IntegrationsPage() {
                               size="sm"
                               onValueChange={(v) =>
                                 updateConfig("collectPhone", v)
+                              }
+                            />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium">
+                                Mostrar en landing
+                              </p>
+                              <p className="text-xs text-default-400">
+                                Activar widget en tu página de inicio
+                              </p>
+                            </div>
+                            <Switch
+                              isSelected={config.showOnLanding}
+                              size="sm"
+                              onValueChange={(v) =>
+                                updateConfig("showOnLanding", v)
                               }
                             />
                           </div>

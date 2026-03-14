@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Button } from "@heroui/button";
 import { Card, CardBody } from "@heroui/card";
 import NextLink from "next/link";
@@ -86,6 +87,41 @@ const stats = [
 ];
 
 export default function HomePage() {
+  useEffect(() => {
+    // Cargar widget si está habilitado para el landing
+    const loadWidget = async () => {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/chat-widget`
+        );
+        const data = await response.json();
+        const config = data?.data || data;
+
+        if (!config?.widgetId || !config?.enabled || !config?.showOnLanding) return;
+
+        // Inyectar el script del widget
+        const script = document.createElement("script");
+        script.innerHTML = `
+          (function() {
+            window.CconeHubWidget = {
+              widgetId: '${config.widgetId}',
+              apiUrl: '${process.env.NEXT_PUBLIC_API_URL}'
+            };
+            var widgetScript = document.createElement('script');
+            widgetScript.src = '${process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "")}/widget/widget.js';
+            widgetScript.async = true;
+            document.head.appendChild(widgetScript);
+          })();
+        `;
+        document.head.appendChild(script);
+      } catch (error) {
+        console.error("Error loading widget:", error);
+      }
+    };
+
+    loadWidget();
+  }, []);
+
   return (
     <div className="relative">
       {/* ═══ HERO ═══ */}
