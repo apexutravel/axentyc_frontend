@@ -361,9 +361,9 @@ export default function TeamPage() {
                 setInviteForm({ ...inviteForm, role });
               }}
             >
-              <SelectItem key="agent" value="agent">Agente</SelectItem>
-              <SelectItem key="manager" value="manager">Manager</SelectItem>
-              <SelectItem key="admin" value="admin">Administrador</SelectItem>
+              <SelectItem key="agent">Agente</SelectItem>
+              <SelectItem key="manager">Manager</SelectItem>
+              <SelectItem key="admin">Administrador</SelectItem>
             </Select>
           </ModalBody>
           <ModalFooter>
@@ -419,9 +419,9 @@ export default function TeamPage() {
                 setRoleForm({ role });
               }}
             >
-              <SelectItem key="agent" value="agent">Agente</SelectItem>
-              <SelectItem key="manager" value="manager">Manager</SelectItem>
-              <SelectItem key="admin" value="admin">Administrador</SelectItem>
+              <SelectItem key="agent">Agente</SelectItem>
+              <SelectItem key="manager">Manager</SelectItem>
+              <SelectItem key="admin">Administrador</SelectItem>
             </Select>
           </ModalBody>
           <ModalFooter>
