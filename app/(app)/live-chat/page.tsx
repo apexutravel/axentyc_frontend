@@ -638,12 +638,21 @@ export default function LiveChatPage() {
       }
     };
 
+    const handleConversationCreated = (data: any) => {
+      loadConversations();
+      addToast({ 
+        title: `Nueva conversación: ${data.contactId?.name || 'Visitante'}`, 
+        color: "primary" 
+      });
+    };
+
     const cleanupNewMsg = on("message.new", handleNewMessage);
     const cleanupAdminMsg = on("admin:message:new", handleNewMessage);
     const cleanupConvUpdated = on("conversation.updated", handleConvUpdated);
     const cleanupMsgReceived = on("message.received", handleNewMessage);
     const cleanupStatusUpdated = on("message.status.updated", handleStatusUpdated);
     const cleanupContactEnriched = on("contact.enriched", handleContactEnriched);
+    const cleanupConvCreated = on("conversation.created", handleConversationCreated);
 
     return () => {
       cleanupNewMsg();
@@ -652,6 +661,7 @@ export default function LiveChatPage() {
       cleanupMsgReceived();
       cleanupStatusUpdated();
       cleanupContactEnriched();
+      cleanupConvCreated();
     };
   }, [on, selectedConv, loadConversations]);
 
