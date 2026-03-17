@@ -50,7 +50,7 @@ export const siteConfig = {
       icon: "LayoutDashboard",
     },
     {
-      label: "Live Chat",
+      label: "Contact Center",
       href: "/live-chat",
       icon: "MessagesSquare",
     },

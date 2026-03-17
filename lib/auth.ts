@@ -109,7 +109,13 @@ export class AuthService {
       throw new Error('Error al obtener perfil');
     }
 
-    return response.json();
+    const json = await response.json();
+    // Backend returns { data: User, statusCode, timestamp }
+    if (json && json.data) {
+      return json.data as User;
+    }
+    // Fallback: { user: User } or direct User
+    return (json && json.user) ? (json.user as User) : (json as User);
   }
 
   static async refresh(): Promise<void> {

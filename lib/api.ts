@@ -14,13 +14,17 @@ export async function apiFetch<T = any>(
 ): Promise<T> {
   const { skipAuth, ...fetchOptions } = options;
 
+  const isFormData = typeof FormData !== 'undefined' && (fetchOptions as any)?.body instanceof FormData;
+
+  const headers: Record<string, string> = {
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+    ...(fetchOptions.headers as any),
+  } as any;
+
   const defaultOptions: RequestInit = {
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...fetchOptions.headers,
-    },
     ...fetchOptions,
+    headers,
   };
 
   let response = await fetch(url, defaultOptions);
@@ -57,12 +61,14 @@ export const api = {
   get: <T = any>(url: string, options?: ApiRequestOptions) =>
     apiFetch<T>(url, { ...options, method: 'GET' }),
 
-  post: <T = any>(url: string, data?: any, options?: ApiRequestOptions) =>
-    apiFetch<T>(url, {
+  post: <T = any>(url: string, data?: any, options?: ApiRequestOptions) => {
+    const isForm = typeof FormData !== 'undefined' && data instanceof FormData;
+    return apiFetch<T>(url, {
       ...options,
       method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
-    }),
+      body: isForm ? data : data ? JSON.stringify(data) : undefined,
+    });
+  },
 
   put: <T = any>(url: string, data?: any, options?: ApiRequestOptions) =>
     apiFetch<T>(url, {

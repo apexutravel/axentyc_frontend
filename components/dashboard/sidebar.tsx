@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 import NextLink from "next/link";
 import { Tooltip } from "@heroui/tooltip";
-import { Chip } from "@heroui/chip";
 import {
   LayoutDashboard,
   MessageSquare,
@@ -91,22 +90,29 @@ export function Sidebar({ items }: SidebarProps) {
 
           const linkContent = (
             <NextLink
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 group ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 group relative ${
                 isActive
                   ? "bg-primary/10 text-primary font-medium"
                   : "text-default-600 hover:bg-default-100 hover:text-foreground"
               }`}
               href={item.href}
             >
-              <Icon
-                className={`flex-shrink-0 ${isActive ? "text-primary" : "text-default-500 group-hover:text-foreground"}`}
-                size={20}
-              />
+              <span className="relative flex-shrink-0">
+                <Icon
+                  className={`${isActive ? "text-primary" : "text-default-500 group-hover:text-foreground"}`}
+                  size={20}
+                />
+                {item.badge != null && item.badge > 0 && collapsed && (
+                  <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-danger text-white text-[10px] font-bold leading-none shadow-sm">
+                    {item.badge > 99 ? "99+" : item.badge}
+                  </span>
+                )}
+              </span>
               <AnimatePresence mode="wait">
                 {!collapsed && (
                   <motion.span
                     animate={{ opacity: 1, x: 0 }}
-                    className="text-sm whitespace-nowrap"
+                    className="text-sm whitespace-nowrap flex-1"
                     exit={{ opacity: 0, x: -10 }}
                     initial={{ opacity: 0, x: -10 }}
                   >
@@ -114,15 +120,10 @@ export function Sidebar({ items }: SidebarProps) {
                   </motion.span>
                 )}
               </AnimatePresence>
-              {!collapsed && item.badge && item.badge > 0 && (
-                <Chip
-                  className="ml-auto"
-                  color="danger"
-                  size="sm"
-                  variant="flat"
-                >
-                  {item.badge}
-                </Chip>
+              {!collapsed && item.badge != null && item.badge > 0 && (
+                <span className="ml-auto flex items-center justify-center min-w-[20px] h-[20px] px-1.5 rounded-full bg-danger text-white text-[11px] font-semibold leading-none">
+                  {item.badge > 99 ? "99+" : item.badge}
+                </span>
               )}
             </NextLink>
           );

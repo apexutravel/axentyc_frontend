@@ -26,14 +26,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUser = async () => {
     try {
       const userData = await AuthService.getProfile();
+      console.log('[Auth] Profile loaded:', userData);
       setUser(userData);
       if (userData.tenantId) {
+        console.log('[Auth] Setting tenant from profile tenantId:', userData.tenantId);
         setTenant({
           id: userData.tenantId,
           name: '',
           slug: '',
           plan: ''
         });
+      } else {
+        console.warn('[Auth] No tenantId found in profile');
       }
     } catch (error) {
       console.error('Error refreshing user:', error);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Input } from "@heroui/input";
 import { Chip } from "@heroui/chip";
 import { Avatar } from "@heroui/avatar";
@@ -24,6 +24,7 @@ import {
 } from "@heroui/dropdown";
 import { motion, AnimatePresence } from "framer-motion";
 import { addToast } from "@heroui/toast";
+import { useSearchParams } from "next/navigation";
 import {
   Search,
   Send,
@@ -45,11 +46,16 @@ import {
   Save,
   StickyNote,
   Tag,
+  Image as ImageIcon,
+  MessageCircle,
+  Facebook,
+  Instagram,
 } from "lucide-react";
 import { api } from "@/lib/api";
-import { API_ENDPOINTS } from "@/config/api";
+import { API_ENDPOINTS, API_URL } from "@/config/api";
 import { useSocket } from "@/hooks/useSocket";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotificationCenter } from "@/contexts/NotificationCenterContext";
 
 interface Conversation {
   _id: string;
@@ -89,6 +95,12 @@ interface Message {
   direction: "inbound" | "outbound";
   type: string;
   content: string;
+  media?: {
+    url: string;
+    mimeType?: string;
+    fileName?: string;
+    fileSize?: number;
+  };
   senderName?: string;
   senderId?: {
     _id: string;
@@ -173,21 +185,86 @@ function MessageStatus({ status }: { status: string }) {
   return <DoubleCheck color="#8696a0" />;
 }
 
+function ChannelIcon({ channel }: { channel: string }) {
+  const channelLower = (channel || "web_chat").toLowerCase();
+  
+  if (channelLower === "whatsapp") {
+    return (
+      <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center" title="WhatsApp">
+        <MessageCircle size={12} className="text-white" />
+      </div>
+    );
+  }
+  
+  if (channelLower === "instagram") {
+    return (
+      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center" title="Instagram">
+        <Instagram size={12} className="text-white" />
+      </div>
+    );
+  }
+  
+  if (channelLower === "facebook" || channelLower === "messenger") {
+    return (
+      <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center" title="Facebook">
+        <Facebook size={12} className="text-white" />
+      </div>
+    );
+  }
+  
+  // Default: web_chat (widget)
+  return (
+    <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center" title="Widget">
+      <Globe size={12} className="text-white" />
+    </div>
+  );
+}
+
 export default function LiveChatPage() {
+  const searchParams = useSearchParams();
   const { tenant } = useAuth();
+  const { markConversationRead, setActiveConversationId } = useNotificationCenter();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [firstUnreadIndex, setFirstUnreadIndex] = useState<number>(-1);
   const [messageInput, setMessageInput] = useState("");
+  const [isDark, setIsDark] = useState(false);
   const [loadingConvs, setLoadingConvs] = useState(true);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const [sendingMsg, setSendingMsg] = useState(false);
+  const [imagePreview, setImagePreview] = useState<{file: File; url: string; caption: string} | null>(null);
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [selectedMember, setSelectedMember] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { on, joinWidgetAdmin, joinTenant, isConnected } = useSocket();
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const visitorTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const adminTypingStateRef = useRef(false);
+  const { subscribe, emit, joinWidgetAdmin, leaveWidgetAdmin, setTenantId, isConnected } = useSocket();
+  const [visitorTyping, setVisitorTyping] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Track theme to adapt subtle patterned background (WhatsApp-like)
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    const update = () => setIsDark(root.classList.contains("dark"));
+    update();
+    const obs = new MutationObserver(update);
+    obs.observe(root, { attributes: true, attributeFilter: ["class"] });
+    return () => obs.disconnect();
+  }, []);
+
+  const messagesBackground = useMemo(() => {
+    // Neutral line-icons pattern (light/dark aware) — replaces wave pattern
+    const stroke = isDark ? "%234b5563" : "%23cbd5e1"; // encoded hex
+    const svg = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='360' height='360' viewBox='0 0 360 360'><defs><pattern id='p' x='0' y='0' width='60' height='60' patternUnits='userSpaceOnUse'><g stroke='${stroke}' stroke-width='1.2' fill='none' opacity='0.45'><rect x='6' y='6' width='16' height='12' rx='2'/><path d='M8 14l4-4 4 4 6-6'/><circle cx='42' cy='12' r='6'/><path d='M38 12h8M42 8v8'/><path d='M8 40l14-6-4 14-3-5-7-3z'/><rect x='36' y='36' width='12' height='10' rx='2'/></g></pattern></defs><rect width='360' height='360' fill='url(%23p)'/></svg>")`;
+    return { backgroundImage: svg, backgroundRepeat: "repeat", backgroundSize: "360px 360px" } as React.CSSProperties;
+  }, [isDark]);
 
   const [showContactPanel, setShowContactPanel] = useState(false);
   const [contactEdit, setContactEdit] = useState({
@@ -198,6 +275,7 @@ export default function LiveChatPage() {
     notes: "",
   });
   const [savingContact, setSavingContact] = useState(false);
+  const conversationIdFromQuery = searchParams.get("conversationId");
 
   // Modals
   const assignModal = useDisclosure();
@@ -219,6 +297,23 @@ export default function LiveChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const emitAdminTyping = useCallback(
+    (isTyping: boolean) => {
+      if (!selectedConv?.metadata?.widgetId || !selectedConv?.metadata?.visitorId) {
+        return;
+      }
+      if (adminTypingStateRef.current === isTyping) return;
+      adminTypingStateRef.current = isTyping;
+      emit("admin:typing", {
+        conversationId: selectedConv._id,
+        widgetId: selectedConv.metadata.widgetId,
+        visitorId: selectedConv.metadata.visitorId,
+        isTyping,
+      });
+    },
+    [emit, selectedConv]
+  );
+
   // --- Data Loading ---
 
   const loadConversations = useCallback(async () => {
@@ -231,7 +326,23 @@ export default function LiveChatPage() {
         `${API_ENDPOINTS.conversations.list}?${params.toString()}`
       );
       const conversationsData = unwrapResponse<Conversation[]>(data);
-      setConversations(Array.isArray(conversationsData) ? conversationsData : []);
+      
+      // Preserve unreadCount: 0 for conversations that were marked as read locally
+      // BUT allow updates if server has new unread messages
+      setConversations((prev) => {
+        const newConversations = Array.isArray(conversationsData) ? conversationsData : [];
+        return newConversations.map((newConv) => {
+          const existingConv = prev.find((c) => c._id === newConv._id);
+          // Only preserve 0 if:
+          // 1. Local was 0 (marked as read)
+          // 2. Server also has 0 (no new messages)
+          // If server has > 0, it means new messages arrived, so use server value
+          if (existingConv && existingConv.unreadCount === 0 && newConv.unreadCount === 0) {
+            return { ...newConv, unreadCount: 0 };
+          }
+          return newConv;
+        });
+      });
     } catch (error: any) {
       console.error("Error loading conversations:", error);
     } finally {
@@ -253,16 +364,20 @@ export default function LiveChatPage() {
             ? "delivered"
             : m.status,
       }));
-      setMessages(normalized.slice().reverse());
+      
+      const reversed = normalized.slice().reverse();
+      
+      // Find first unread message (inbound message with status != 'read')
+      const firstUnread = reversed.findIndex(
+        (m) => m.direction === "inbound" && m.status?.toLowerCase() !== "read"
+      );
+      setFirstUnreadIndex(firstUnread);
+      
+      setMessages(reversed);
       setTimeout(scrollToBottom, 100);
 
-      await api.post(API_ENDPOINTS.conversations.markRead(conversationId));
-
-      setConversations((prev) =>
-        prev.map((c) =>
-          c._id === conversationId ? { ...c, unreadCount: 0 } : c
-        )
-      );
+      // Don't mark as read immediately - let the visibility/scroll handler do it
+      // This ensures messages are only marked as READ when user actually sees them
     } catch (error: any) {
       console.error("Error loading messages:", error);
     } finally {
@@ -282,9 +397,16 @@ export default function LiveChatPage() {
 
   const selectConversation = useCallback(
     (conv: Conversation) => {
+      // Leave previous conversation room before switching
+      if (selectedConv?._id && selectedConv._id !== conv._id) {
+        leaveWidgetAdmin(selectedConv._id);
+      }
+
       setSelectedConv(conv);
       loadMessages(conv._id);
       joinWidgetAdmin(conv._id);
+      setActiveConversationId(conv._id);
+      markConversationRead(conv._id);
       setContactEdit({
         name: conv.contactId?.name || "",
         email: conv.contactId?.email || "",
@@ -293,10 +415,104 @@ export default function LiveChatPage() {
         notes: conv.contactId?.notes || "",
       });
     },
-    [loadMessages, joinWidgetAdmin]
+    [selectedConv?._id, leaveWidgetAdmin, loadMessages, joinWidgetAdmin, markConversationRead, setActiveConversationId]
   );
 
   // --- Actions ---
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedConv) return;
+
+    if (file.type.startsWith("image/")) {
+      const url = URL.createObjectURL(file);
+      setImagePreview({ file, url, caption: "" });
+    } else {
+      // For non-images, send directly
+      setUploadingFile(true);
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const uploadRes = await api.post(API_ENDPOINTS.upload, formData);
+        const rawUrl = uploadRes.data?.url || uploadRes.url;
+        const base = API_URL.replace(/\/api\/v1\/?$/, "");
+        const fileUrl = rawUrl?.startsWith("http") ? rawUrl : `${base}${rawUrl}`;
+
+        if (!fileUrl) throw new Error("No URL returned from upload");
+
+        const messageData = {
+          content: `📎 ${file.name}`,
+          type: "file",
+          media: {
+            url: fileUrl,
+            mimeType: file.type,
+            fileName: file.name,
+            fileSize: file.size,
+          },
+        };
+
+        await api.post(API_ENDPOINTS.conversations.messages(selectedConv._id), messageData);
+        addToast({ title: "Archivo enviado", color: "success" });
+        loadMessages(selectedConv._id);
+      } catch (error: any) {
+        console.error("Error uploading file:", error);
+        addToast({ title: "Error al subir archivo", color: "danger" });
+      } finally {
+        setUploadingFile(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const sendImageWithCaption = async () => {
+    if (!imagePreview || !selectedConv) return;
+
+    setUploadingFile(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", imagePreview.file);
+
+      const uploadRes = await api.post(API_ENDPOINTS.upload, formData);
+      const rawUrl = uploadRes.data?.url || uploadRes.url;
+      const base = API_URL.replace(/\/api\/v1\/?$/, "");
+      const fileUrl = rawUrl?.startsWith("http") ? rawUrl : `${base}${rawUrl}`;
+
+      if (!fileUrl) throw new Error("No URL returned from upload");
+
+      const messageData = {
+        content: imagePreview.caption || "📷 Imagen",
+        type: "image",
+        media: {
+          url: fileUrl,
+          mimeType: imagePreview.file.type,
+          fileName: imagePreview.file.name,
+          fileSize: imagePreview.file.size,
+        },
+      };
+
+      await api.post(API_ENDPOINTS.conversations.messages(selectedConv._id), messageData);
+      addToast({ title: "Imagen enviada", color: "success" });
+      loadMessages(selectedConv._id);
+      
+      URL.revokeObjectURL(imagePreview.url);
+      setImagePreview(null);
+    } catch (error: any) {
+      console.error("Error uploading image:", error);
+      addToast({ title: "Error al subir imagen", color: "danger" });
+    } finally {
+      setUploadingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const cancelImagePreview = () => {
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview.url);
+      setImagePreview(null);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const sendMessage = async () => {
     if (!messageInput.trim() || !selectedConv) return;
@@ -304,6 +520,7 @@ export default function LiveChatPage() {
     setSendingMsg(true);
     const content = messageInput.trim();
     setMessageInput("");
+    emitAdminTyping(false);
 
     const tempMsg: Message = {
       _id: `temp_${Date.now()}`,
@@ -532,16 +749,114 @@ export default function LiveChatPage() {
     loadTeamMembers();
   }, [loadConversations, loadTeamMembers]);
 
+  // Polling fallback: refresh conversations every 10s
   useEffect(() => {
-    if (isConnected && tenant?.id) {
-      joinTenant(tenant.id);
+    const interval = setInterval(() => {
+      console.log("[LiveChat] Polling refresh conversations");
+      loadConversations();
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [loadConversations]);
+
+  useEffect(() => {
+    if (tenant?.id) {
+      setTenantId(tenant.id);
     }
-  }, [isConnected, tenant?.id, joinTenant]);
+  }, [tenant?.id, setTenantId]);
+
+  // Join on selection and leave on unmount/change
+  useEffect(() => {
+    if (!selectedConv?._id) return;
+    joinWidgetAdmin(selectedConv._id);
+    return () => {
+      leaveWidgetAdmin(selectedConv._id);
+    };
+  }, [selectedConv?._id, joinWidgetAdmin, leaveWidgetAdmin]);
+
+  // Re-join on reconnect safety net
+  useEffect(() => {
+    if (isConnected && selectedConv?._id) {
+      joinWidgetAdmin(selectedConv._id);
+    }
+  }, [isConnected, selectedConv?._id, joinWidgetAdmin]);
+
+  // Handle tab visibility changes: leave when hidden, rejoin when visible
+  useEffect(() => {
+    const handler = () => {
+      if (!selectedConv?._id) return;
+      if (document.visibilityState === 'hidden') {
+        leaveWidgetAdmin(selectedConv._id);
+      } else if (document.visibilityState === 'visible') {
+        joinWidgetAdmin(selectedConv._id);
+      }
+    };
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
+  }, [selectedConv?._id, joinWidgetAdmin, leaveWidgetAdmin]);
+
+  // Keep NotificationCenter informed of the active conversation to suppress sounds/pushes while chatting
+  useEffect(() => {
+    setActiveConversationId(selectedConv?._id || null);
+    return () => setActiveConversationId(null);
+  }, [selectedConv?._id, setActiveConversationId]);
+
+  useEffect(() => {
+    if (!conversationIdFromQuery || conversations.length === 0) return;
+    if (selectedConv?._id === conversationIdFromQuery) return;
+    const targetConversation = conversations.find((conv) => conv._id === conversationIdFromQuery);
+    if (targetConversation) {
+      selectConversation(targetConversation);
+    }
+  }, [conversationIdFromQuery, conversations, selectedConv?._id, selectConversation]);
+
+  // Mark messages as read when conversation is actively being viewed
+  useEffect(() => {
+    if (!selectedConv?._id || messages.length === 0) return;
+    if (typeof document === 'undefined' || document.visibilityState !== 'visible') return;
+    
+    // Only mark as read if there are unread messages
+    const hasUnreadMessages = messages.some(
+      (m) => m.direction === "inbound" && m.status?.toLowerCase() !== "read"
+    );
+    
+    if (!hasUnreadMessages) return;
+    
+    // Mark as read after a short delay (user has time to see the messages)
+    const timer = setTimeout(async () => {
+      try {
+        await api.post(API_ENDPOINTS.conversations.markRead(selectedConv._id));
+        
+        // Update local state
+        setConversations((prev) =>
+          prev.map((c) =>
+            c._id === selectedConv._id ? { ...c, unreadCount: 0 } : c
+          )
+        );
+        
+        // Update messages status locally
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.direction === "inbound" ? { ...m, status: "read" } : m
+          )
+        );
+        
+        // Clear unread indicator
+        setFirstUnreadIndex(-1);
+      } catch (error) {
+        console.error('[LiveChat] Error marking as read:', error);
+      }
+    }, 1500); // 1.5 second delay to ensure user sees the messages
+    
+    return () => clearTimeout(timer);
+  }, [selectedConv?._id, messages.length]);
 
   useEffect(() => {
     const handleNewMessage = (data: any) => {
-      if (selectedConv && data.conversationId === selectedConv._id) {
-        const raw = data.message || data;
+      console.log("[LiveChat] message event received:", data);
+      const incomingConversationId = data?.conversationId || data?.message?.conversationId;
+      const raw = data?.message || data;
+      if (selectedConv && incomingConversationId === selectedConv._id) {
         const msg = {
           ...raw,
           status:
@@ -549,26 +864,36 @@ export default function LiveChatPage() {
               ? "delivered"
               : raw.status,
         };
-        setMessages((prev) => [...prev, msg]);
+        setMessages((prev) => {
+          const id = String((msg as any)?._id || "");
+          if (id && prev.some((m) => String((m as any)?._id || "") === id)) return prev;
+          return [...prev, msg];
+        });
+        setVisitorTyping(false);
         setTimeout(scrollToBottom, 100);
       }
 
+      let conversationExists = false;
       setConversations((prev) =>
-        prev.map((c) =>
-          c._id === (data.conversationId || data.message?.conversationId)
-            ? {
-                ...c,
-                lastMessage: data.message?.content || data.content,
-                lastMessageAt: new Date().toISOString(),
-                unreadCount:
-                  selectedConv?._id === c._id ? 0 : c.unreadCount + 1,
-              }
-            : c
-        )
+        prev.map((c) => {
+          if (c._id !== incomingConversationId) return c;
+          conversationExists = true;
+          return {
+            ...c,
+            lastMessage: raw?.content || c.lastMessage,
+            lastMessageAt: new Date().toISOString(),
+            unreadCount: selectedConv?._id === c._id ? 0 : c.unreadCount + 1,
+          };
+        })
       );
+
+      if (!conversationExists) {
+        loadConversations();
+      }
     };
 
     const handleConvUpdated = (data: any) => {
+      console.log("[LiveChat] conversation.updated:", data);
       if (data?._id) {
         setConversations((prev) =>
           prev.map((c) =>
@@ -599,6 +924,7 @@ export default function LiveChatPage() {
     };
 
     const handleStatusUpdated = (data: any) => {
+      console.log("[LiveChat] message.status.updated:", data);
       if (data.status === "read" && selectedConv && data.conversationId === selectedConv._id) {
         setMessages((prev) =>
           prev.map((m) =>
@@ -613,6 +939,7 @@ export default function LiveChatPage() {
     };
 
     const handleContactEnriched = (data: any) => {
+      console.log("[LiveChat] contact.enriched:", data);
       if (selectedConv && data.conversationId === selectedConv._id && data.data) {
         setSelectedConv((prev) =>
           prev ? { ...prev, contactId: { ...prev.contactId, ...data.data } } : prev
@@ -639,31 +966,84 @@ export default function LiveChatPage() {
     };
 
     const handleConversationCreated = (data: any) => {
+      console.log("[LiveChat] conversation.created:", data);
+      
+      // Optimistically add to conversations list
+      setConversations((prev) => {
+        const exists = prev.some((c) => c._id === data._id);
+        if (exists) return prev;
+        return [data, ...prev];
+      });
+      
+      // Also reload to ensure we have full data
       loadConversations();
+      
       addToast({ 
         title: `Nueva conversación: ${data.contactId?.name || 'Visitante'}`, 
         color: "primary" 
       });
     };
 
-    const cleanupNewMsg = on("message.new", handleNewMessage);
-    const cleanupAdminMsg = on("admin:message:new", handleNewMessage);
-    const cleanupConvUpdated = on("conversation.updated", handleConvUpdated);
-    const cleanupMsgReceived = on("message.received", handleNewMessage);
-    const cleanupStatusUpdated = on("message.status.updated", handleStatusUpdated);
-    const cleanupContactEnriched = on("contact.enriched", handleContactEnriched);
-    const cleanupConvCreated = on("conversation.created", handleConversationCreated);
+    const handleVisitorTyping = (data: any) => {
+      if (!selectedConv?._id || data?.conversationId !== selectedConv._id) return;
+      if (data?.sender !== "visitor") return;
+
+      const isTypingNow = Boolean(data?.isTyping);
+      setVisitorTyping(isTypingNow);
+
+      if (visitorTypingTimeoutRef.current) {
+        clearTimeout(visitorTypingTimeoutRef.current);
+      }
+      if (isTypingNow) {
+        visitorTypingTimeoutRef.current = setTimeout(() => {
+          setVisitorTyping(false);
+        }, 2000);
+      }
+    };
+
+    const cleanupNewMsg = subscribe("message.new", handleNewMessage);
+    const cleanupAdminMsg = subscribe("admin:message:new", handleNewMessage);
+    // Also listen to tenant-wide inbound messages to update list badges even if not joined to specific rooms
+    const cleanupTenantMsg = subscribe("message.received", handleNewMessage);
+    const cleanupConvUpdated = subscribe("conversation.updated", handleConvUpdated);
+    const cleanupStatusUpdated = subscribe("message.status.updated", handleStatusUpdated);
+    const cleanupContactEnriched = subscribe("contact.enriched", handleContactEnriched);
+    const cleanupConvCreated = subscribe("conversation.created", handleConversationCreated);
+    const cleanupVisitorTyping = subscribe("admin:typing", handleVisitorTyping);
+    const cleanupVisitorTypingAlt = subscribe("widget:typing", handleVisitorTyping);
 
     return () => {
       cleanupNewMsg();
       cleanupAdminMsg();
+      cleanupTenantMsg();
       cleanupConvUpdated();
-      cleanupMsgReceived();
       cleanupStatusUpdated();
       cleanupContactEnriched();
       cleanupConvCreated();
+      cleanupVisitorTyping();
+      cleanupVisitorTypingAlt();
     };
-  }, [on, selectedConv, loadConversations]);
+  }, [subscribe, selectedConv, loadConversations]);
+
+  useEffect(() => {
+    setVisitorTyping(false);
+    adminTypingStateRef.current = false;
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+    if (visitorTypingTimeoutRef.current) {
+      clearTimeout(visitorTypingTimeoutRef.current);
+      visitorTypingTimeoutRef.current = null;
+    }
+  }, [selectedConv?._id]);
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (visitorTypingTimeoutRef.current) clearTimeout(visitorTypingTimeoutRef.current);
+    };
+  }, []);
 
   // --- Helpers ---
 
@@ -782,10 +1162,9 @@ export default function LiveChatPage() {
                     name={conv.contactId?.name?.substring(0, 2).toUpperCase() || "V"}
                     size="sm"
                   />
-                  <Globe
-                    className="absolute -bottom-1 -right-1 text-primary bg-content1 rounded-full p-0.5"
-                    size={14}
-                  />
+                  <div className="absolute -bottom-1 -right-1">
+                    <ChannelIcon channel={conv.channel} />
+                  </div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
@@ -953,7 +1332,7 @@ export default function LiveChatPage() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3" style={messagesBackground}>
               {loadingMsgs ? (
                 <div className="flex items-center justify-center py-12">
                   <Spinner size="sm" />
@@ -966,30 +1345,44 @@ export default function LiveChatPage() {
                 </div>
               ) : (
                 <AnimatePresence>
-                  {messages.map((msg) => (
-                    <motion.div
-                      key={msg._id}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={`flex ${
-                        msg.direction === "outbound"
-                          ? "justify-end"
-                          : "justify-start"
-                      }`}
-                      initial={{ opacity: 0, y: 10 }}
-                    >
-                      <div
-                        className={`flex flex-col gap-1 max-w-[70%] ${
-                          msg.direction === "outbound"
-                            ? "items-end"
-                            : "items-start"
-                        }`}
+                  {messages.map((msg, index) => (
+                    <>
+                      {/* Unread divider - show before first unread message */}
+                      {index === firstUnreadIndex && firstUnreadIndex !== -1 && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className="flex items-center gap-3 my-4 px-4"
+                        >
+                          <div className="flex-1 h-[1px] bg-gradient-to-r from-transparent via-primary/40 to-primary/40" />
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+                            <MessagesSquare className="w-3.5 h-3.5 text-primary" />
+                            <span className="text-xs font-medium text-primary">
+                              {messages.slice(firstUnreadIndex).filter(m => m.direction === "inbound" && m.status?.toLowerCase() !== "read").length} mensaje{messages.slice(firstUnreadIndex).filter(m => m.direction === "inbound" && m.status?.toLowerCase() !== "read").length !== 1 ? 's' : ''} no leído{messages.slice(firstUnreadIndex).filter(m => m.direction === "inbound" && m.status?.toLowerCase() !== "read").length !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+                          <div className="flex-1 h-[1px] bg-gradient-to-l from-transparent via-primary/40 to-primary/40" />
+                        </motion.div>
+                      )}
+                      <motion.div
+                        key={msg._id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`flex flex-col ${msg.direction === "outbound" ? "items-end" : "items-start"}`}
                       >
+                      {msg.direction === "inbound" && msg.senderName && (
+                        <p className="text-xs font-semibold mb-1 ml-3 text-default-500 opacity-85">
+                          {msg.senderName}
+                        </p>
+                      )}
+                      <div className="flex flex-col max-w-[75%]">
                         <div
-                          className={`rounded-lg px-3 py-2 ${
+                          className={`rounded-lg overflow-hidden ${
                             msg.direction === "outbound"
                               ? "text-white rounded-br-sm"
                               : "bg-default-100 rounded-bl-sm"
-                          }`}
+                          } ${((msg.type === "image" && msg.media?.url) || (msg.media?.mimeType || "").startsWith("image/")) ? "p-0" : "px-3 py-2"}`}
                           style={
                             msg.direction === "outbound"
                               ? {
@@ -1002,14 +1395,37 @@ export default function LiveChatPage() {
                               : {}
                           }
                         >
-                          {msg.direction === "inbound" && msg.senderName && (
-                            <p className="text-xs font-semibold mb-1 text-default-600">
-                              {msg.senderName}
+                          {((msg.type === "image" && msg.media?.url) || (msg.media?.mimeType || "").startsWith("image/")) ? (
+                            <>
+                              <img
+                                src={msg.media!.url}
+                                alt={msg.media?.fileName || "Imagen"}
+                                className="max-w-[280px] max-h-[350px] w-full cursor-pointer object-cover hover:opacity-95 transition-opacity"
+                                loading="lazy"
+                                onClick={() => setViewingImage(msg.media!.url)}
+                              />
+                              {msg.content && msg.content !== "📷 Imagen" && (
+                                <p className="text-sm whitespace-pre-wrap break-words px-[10px] py-2 pb-2" style={{ hyphens: "none" }}>
+                                  {msg.content}
+                                </p>
+                              )}
+                            </>
+                          ) : msg.type === "file" && msg.media?.url ? (
+                            <a
+                              href={msg.media.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary underline break-all text-sm"
+                            >
+                              {msg.content || msg.media.fileName || "Archivo"}
+                            </a>
+                          ) : (
+                            <p className="text-sm whitespace-pre-wrap break-words" style={{ hyphens: "none" }}>
+                              {msg.content}
                             </p>
                           )}
-                          <p className="text-sm">{msg.content}</p>
                         </div>
-                        <div className="flex items-center gap-1 px-1">
+                        <div className="flex items-center gap-1 px-1 mt-1">
                           <span className="text-[11px]" style={{ color: "#8696a0" }}>
                             {formatMsgTime(msg.createdAt)}
                           </span>
@@ -1027,6 +1443,7 @@ export default function LiveChatPage() {
                         </div>
                       </div>
                     </motion.div>
+                    </>
                   ))}
                 </AnimatePresence>
               )}
@@ -1035,33 +1452,65 @@ export default function LiveChatPage() {
 
             {/* Input */}
             <div className="border-t border-divider p-4">
+              {visitorTyping && (
+                <div className="text-xs text-default-500 mb-2">Visitante está escribiendo...</div>
+              )}
               <div className="flex items-center gap-2">
-                <Button isIconOnly size="sm" variant="light">
-                  <Paperclip size={16} />
-                </Button>
-                <Input
-                  placeholder="Escribe un mensaje..."
-                  size="sm"
-                  value={messageInput}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      sendMessage();
-                    }
-                  }}
-                  onValueChange={setMessageInput}
-                />
-                <Button
-                  color="primary"
-                  isDisabled={!messageInput.trim()}
-                  isIconOnly
-                  isLoading={sendingMsg}
-                  size="sm"
-                  onPress={sendMessage}
-                >
-                  <Send size={16} />
-                </Button>
-              </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,application/pdf,.doc,.docx,.txt"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="light"
+                    isLoading={uploadingFile}
+                    onPress={() => fileInputRef.current?.click()}
+                  >
+                    <ImageIcon size={16} />
+                  </Button>
+                  <Input
+                    placeholder="Escribe un mensaje..."
+                    size="sm"
+                    value={messageInput}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                      }
+                    }}
+                    onValueChange={(value) => {
+                      setMessageInput(value);
+
+                      if (!selectedConv?.metadata?.widgetId || !selectedConv?.metadata?.visitorId) {
+                        return;
+                      }
+
+                      emitAdminTyping(value.trim().length > 0);
+
+                      if (typingTimeoutRef.current) {
+                        clearTimeout(typingTimeoutRef.current);
+                      }
+
+                      typingTimeoutRef.current = setTimeout(() => {
+                        emitAdminTyping(false);
+                      }, 900);
+                    }}
+                  />
+                  <Button
+                    color="primary"
+                    isDisabled={!messageInput.trim()}
+                    isIconOnly
+                    isLoading={sendingMsg}
+                    size="sm"
+                    onPress={sendMessage}
+                  >
+                    <Send size={16} />
+                  </Button>
+                </div>
             </div>
           </>
         )}
@@ -1415,6 +1864,77 @@ export default function LiveChatPage() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Modal: Image Preview (before send) */}
+      {imagePreview && (
+        <Modal 
+          isOpen={true} 
+          onClose={cancelImagePreview}
+          size="3xl"
+          classNames={{
+            base: "bg-black/95",
+            closeButton: "text-white hover:bg-white/20"
+          }}
+        >
+          <ModalContent>
+            <ModalHeader className="text-white">Vista previa</ModalHeader>
+            <ModalBody className="flex flex-col items-center">
+              <img
+                src={imagePreview.url}
+                alt="Preview"
+                className="max-w-full max-h-[60vh] object-contain rounded-lg"
+              />
+              <Textarea
+                placeholder="Añade un mensaje..."
+                value={imagePreview.caption}
+                onValueChange={(value) => setImagePreview({...imagePreview, caption: value})}
+                className="mt-4"
+                classNames={{
+                  input: "text-white",
+                  inputWrapper: "bg-white/10 border-white/20"
+                }}
+              />
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="light" onPress={cancelImagePreview} className="text-white">
+                Cancelar
+              </Button>
+              <Button 
+                color="primary" 
+                onPress={sendImageWithCaption}
+                isLoading={uploadingFile}
+                startContent={!uploadingFile && <Send size={16} />}
+              >
+                Enviar
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      )}
+
+      {/* Modal: View Full Image */}
+      {viewingImage && (
+        <Modal 
+          isOpen={true} 
+          onClose={() => setViewingImage(null)}
+          size="full"
+          classNames={{
+            base: "bg-black/95",
+            closeButton: "text-white hover:bg-white/20 z-50"
+          }}
+        >
+          <ModalContent>
+            <ModalBody className="flex items-center justify-center p-0">
+              <img
+                src={viewingImage}
+                alt="Full size"
+                className="max-w-full max-h-screen object-contain"
+                onClick={() => setViewingImage(null)}
+              />
+            </ModalBody>
+          </ModalContent>
+        </Modal>
+      )}
     </div>
   );
 }
