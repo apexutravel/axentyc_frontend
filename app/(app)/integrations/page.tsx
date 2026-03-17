@@ -17,6 +17,15 @@ import {
   DrawerBody,
   DrawerFooter,
 } from "@heroui/drawer";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure,
+} from "@heroui/modal";
+import { Accordion, AccordionItem } from "@heroui/accordion";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
@@ -35,6 +44,14 @@ import {
   Mail,
   Facebook,
   Trash2,
+  HelpCircle,
+  ChevronRight,
+  Globe,
+  Key,
+  Link2,
+  Settings,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { API_ENDPOINTS } from "@/config/api";
@@ -138,6 +155,7 @@ export default function IntegrationsPage() {
   } | null>(null);
   const [copied, setCopied] = useState(false);
   const [widgetExists, setWidgetExists] = useState(false);
+  const fbGuide = useDisclosure();
   const [domainsInput, setDomainsInput] = useState("");
 
   // --- Email Integration State ---
@@ -203,6 +221,7 @@ export default function IntegrationsPage() {
   const [fbConfigExists, setFbConfigExists] = useState(false);
   const [fbConfigForm, setFbConfigForm] = useState({ appId: '', appSecret: '', verifyToken: '' });
   const [fbConfigSaving, setFbConfigSaving] = useState(false);
+  const [fbWebhookUrl, setFbWebhookUrl] = useState('');
 
   const loadFacebookConfig = useCallback(async () => {
     try {
@@ -211,6 +230,7 @@ export default function IntegrationsPage() {
       if (data.exists) {
         setFbConfigExists(true);
         setFbConfigForm({ appId: data.appId, appSecret: '••••••••', verifyToken: data.verifyToken });
+        setFbWebhookUrl(data.webhookUrl || '');
       } else {
         setFbConfigExists(false);
         setFbConfigForm({ appId: '', appSecret: '', verifyToken: 'cconehub_fb_verify' });
@@ -683,6 +703,15 @@ export default function IntegrationsPage() {
                     </Chip>
                   </div>
                 </div>
+                <Button
+                  isIconOnly
+                  variant="light"
+                  size="sm"
+                  className="min-w-7 w-7 h-7 text-default-400 hover:text-blue-500"
+                  onPress={fbGuide.onOpen}
+                >
+                  <HelpCircle size={16} />
+                </Button>
               </div>
 
               {/* Connected pages list */}
@@ -1517,13 +1546,71 @@ export default function IntegrationsPage() {
                     description="Token para verificar el webhook. Usa cualquier string seguro."
                   />
 
-                  <div className="bg-warning-50 dark:bg-warning-950/30 border border-warning-200 dark:border-warning-800 rounded-lg p-3">
-                    <p className="text-xs text-warning-700 dark:text-warning-300">
-                      ⚠️ <strong>Importante:</strong> Después de guardar, deberás configurar el webhook en Facebook:<br/>
-                      • URL: <code className="bg-warning-100 dark:bg-warning-900 px-1 rounded">https://tu-dominio.com/webhook/facebook</code><br/>
-                      • Verify Token: El que configuraste arriba<br/>
-                      • Campos: messages, messaging_postbacks, message_reads, message_deliveries
+                  <Divider />
+
+                  <div className={`rounded-lg p-3 space-y-2.5 border ${fbConfigExists && fbWebhookUrl ? 'bg-success-50 dark:bg-success-950/30 border-success-200 dark:border-success-800' : 'bg-warning-50 dark:bg-warning-950/30 border-warning-200 dark:border-warning-800'}`}>
+                    <p className={`text-xs font-bold ${fbConfigExists && fbWebhookUrl ? 'text-success-700 dark:text-success-300' : 'text-warning-700 dark:text-warning-300'}`}>
+                      {fbConfigExists && fbWebhookUrl ? '✅' : '⚠️'} Datos para configurar el Webhook en Facebook Developers
                     </p>
+
+                    {fbConfigExists && fbWebhookUrl ? (
+                      <div className="space-y-2">
+                        <div>
+                          <p className="text-[10px] text-success-600 dark:text-success-400 font-semibold mb-0.5">Webhook URL (Callback URL):</p>
+                          <div className="flex items-center gap-1">
+                            <code className="text-[11px] bg-success-100 dark:bg-success-900 px-2 py-1 rounded flex-1 break-all">
+                              {fbWebhookUrl}
+                            </code>
+                            <Button
+                              size="sm"
+                              isIconOnly
+                              variant="flat"
+                              className="min-w-6 w-6 h-6"
+                              onPress={() => {
+                                navigator.clipboard.writeText(fbWebhookUrl);
+                                toast.success('URL copiada');
+                              }}
+                            >
+                              <Copy size={12} />
+                            </Button>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-success-600 dark:text-success-400 font-semibold mb-0.5">Verify Token:</p>
+                          <div className="flex items-center gap-1">
+                            <code className="text-[11px] bg-success-100 dark:bg-success-900 px-2 py-1 rounded flex-1">
+                              {fbConfigForm.verifyToken}
+                            </code>
+                            <Button
+                              size="sm"
+                              isIconOnly
+                              variant="flat"
+                              className="min-w-6 w-6 h-6"
+                              onPress={() => {
+                                navigator.clipboard.writeText(fbConfigForm.verifyToken);
+                                toast.success('Token copiado');
+                              }}
+                            >
+                              <Copy size={12} />
+                            </Button>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-success-600 dark:text-success-400 font-semibold mb-0.5">Campos (Webhook Fields):</p>
+                          <div className="flex flex-wrap gap-1 mt-0.5">
+                            {['messages', 'messaging_postbacks', 'message_reads', 'message_deliveries'].map((f) => (
+                              <Chip key={f} size="sm" variant="flat" color="success" className="text-[10px] h-5">
+                                {f}
+                              </Chip>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-warning-600 dark:text-warning-400">
+                        Guarda la configuración primero. Después aparecerán aquí la <strong>URL</strong> y el <strong>Verify Token</strong> listos para copiar y pegar en Facebook Developers.
+                      </p>
+                    )}
                   </div>
                 </div>
               </DrawerBody>
@@ -1543,6 +1630,395 @@ export default function IntegrationsPage() {
           )}
         </DrawerContent>
       </Drawer>
+
+      {/* ====================== FACEBOOK GUIDE MODAL ====================== */}
+      <Modal
+        isOpen={fbGuide.isOpen}
+        onOpenChange={fbGuide.onOpenChange}
+        size="3xl"
+        scrollBehavior="inside"
+        classNames={{ body: "p-0" }}
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex items-center gap-2 border-b border-divider pb-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
+                  <Facebook size={18} />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold">Guía de Configuración — Facebook Messenger</h2>
+                  <p className="text-xs text-default-500 font-normal">Sigue estos pasos para conectar tu página de Facebook</p>
+                </div>
+              </ModalHeader>
+              <ModalBody>
+                <Accordion
+                  selectionMode="multiple"
+                  defaultExpandedKeys={["step1"]}
+                  variant="splitted"
+                  className="px-4 py-3 gap-2"
+                >
+                  {/* PASO 1 */}
+                  <AccordionItem
+                    key="step1"
+                    aria-label="Paso 1"
+                    startContent={
+                      <div className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">1</div>
+                    }
+                    title={<span className="text-sm font-semibold">Crear una App en Meta for Developers</span>}
+                    subtitle={<span className="text-xs text-default-400">Necesitas una app de Meta para conectar Messenger</span>}
+                  >
+                    <div className="space-y-3 text-sm text-default-600 pb-2">
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Ve a <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer" className="text-blue-500 underline font-medium">developers.facebook.com/apps</a> e inicia sesión con tu cuenta de Facebook.</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Haz clic en <strong className="text-foreground">&quot;Mis aplicaciones&quot;</strong> (menú superior) y luego en <strong className="text-foreground">&quot;Crear app&quot;</strong>.</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Selecciona los <strong className="text-foreground">casos de uso</strong> que necesitas. Para Messenger, asegúrate de marcar <strong className="text-foreground">&quot;Otros&quot;</strong> o la opción que incluya mensajería empresarial.</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Completa el <strong className="text-foreground">nombre de la app</strong> (ej: &quot;Mi CRM&quot;) y tu <strong className="text-foreground">correo electrónico de contacto</strong>.</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Si se te pide, asocia un <strong className="text-foreground">portafolio de negocio</strong> (Business Portfolio) o créalo nuevo.</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Haz clic en <strong className="text-foreground">&quot;Crear app&quot;</strong> para finalizar.</span>
+                      </div>
+                      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-2.5 mt-2">
+                        <p className="text-xs text-blue-600 dark:text-blue-400">
+                          <strong>Nota:</strong> Si ya tienes una app creada, puedes usar esa misma. Solo necesitas una app por empresa.
+                        </p>
+                      </div>
+                    </div>
+                  </AccordionItem>
+
+                  {/* PASO 2 */}
+                  <AccordionItem
+                    key="step2"
+                    aria-label="Paso 2"
+                    startContent={
+                      <div className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">2</div>
+                    }
+                    title={<span className="text-sm font-semibold">Obtener App ID y Clave Secreta</span>}
+                    subtitle={<span className="text-xs text-default-400">Credenciales necesarias para la integración</span>}
+                  >
+                    <div className="space-y-3 text-sm text-default-600 pb-2">
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Dentro de tu app, en el menú lateral izquierdo busca <strong className="text-foreground">Configuración de la aplicación</strong> y haz clic en <strong className="text-foreground">&quot;Información básica&quot;</strong>.</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Key size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>En la parte superior verás el <strong className="text-foreground">Identificador de la aplicación</strong> — es un número largo como <code className="bg-default-100 px-1.5 py-0.5 rounded text-xs">955611273659322</code>. Cópialo.</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Key size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Junto a <strong className="text-foreground">&quot;Clave secreta de la aplicación&quot;</strong> haz clic en el botón <strong className="text-foreground">&quot;Mostrar&quot;</strong>. Ingresa tu contraseña de Facebook si se solicita y copia la clave secreta.</span>
+                      </div>
+                      <div className="bg-default-50 dark:bg-default-100/50 rounded-lg p-3 mt-2 space-y-1">
+                        <p className="text-[10px] text-default-400 font-semibold uppercase">En esta misma página también encontrarás:</p>
+                        <p className="text-xs">• <strong>Nombre para mostrar</strong> — el nombre de tu app</p>
+                        <p className="text-xs">• <strong>Dominios de la aplicación</strong> — tu dominio (ej: <code className="bg-default-100 px-1 rounded text-[11px]">tudominio.com</code>)</p>
+                        <p className="text-xs">• <strong>URL de la Política de privacidad</strong> — necesaria para publicar la app</p>
+                      </div>
+                      <div className="bg-warning-50 dark:bg-warning-950/30 border border-warning-200 dark:border-warning-800 rounded-lg p-2.5 mt-2">
+                        <p className="text-xs text-warning-600 dark:text-warning-400">
+                          <AlertTriangle size={12} className="inline mr-1" />
+                          <strong>Importante:</strong> Nunca compartas tu Clave Secreta con nadie. Se almacena de forma segura en nuestro sistema.
+                        </p>
+                      </div>
+                    </div>
+                  </AccordionItem>
+
+                  {/* PASO 3 */}
+                  <AccordionItem
+                    key="step3"
+                    aria-label="Paso 3"
+                    startContent={
+                      <div className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">3</div>
+                    }
+                    title={<span className="text-sm font-semibold">Guardar credenciales en el CRM</span>}
+                    subtitle={<span className="text-xs text-default-400">Ingresa tu App ID y Clave Secreta aquí</span>}
+                  >
+                    <div className="space-y-3 text-sm text-default-600 pb-2">
+                      <div className="flex items-start gap-2">
+                        <Settings size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>En la tarjeta de <strong className="text-foreground">Facebook Messenger</strong>, haz clic en el botón <strong className="text-foreground">&quot;Configurar App&quot;</strong>.</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Se abrirá un panel lateral donde debes ingresar:</span>
+                      </div>
+                      <div className="ml-6 space-y-1.5">
+                        <p className="text-xs"><strong className="text-foreground">App ID:</strong> El Identificador de la aplicación que copiaste en el paso 2.</p>
+                        <p className="text-xs"><strong className="text-foreground">App Secret:</strong> La Clave secreta que copiaste en el paso 2.</p>
+                        <p className="text-xs"><strong className="text-foreground">Verify Token:</strong> Inventa un texto seguro (ej: <code className="bg-default-100 px-1 rounded">mi_empresa_fb_2024</code>). Lo necesitarás en el paso 5.</p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Haz clic en <strong className="text-foreground">&quot;Guardar Configuración&quot;</strong>.</span>
+                      </div>
+                      <div className="bg-success-50 dark:bg-success-950/30 border border-success-200 dark:border-success-800 rounded-lg p-2.5 mt-2">
+                        <p className="text-xs text-success-600 dark:text-success-400">
+                          <CheckCircle2 size={12} className="inline mr-1" />
+                          Después de guardar, verás un recuadro verde con la <strong>Webhook URL</strong>, el <strong>Verify Token</strong> y los <strong>Campos del webhook</strong> listos para copiar.
+                        </p>
+                      </div>
+                    </div>
+                  </AccordionItem>
+
+                  {/* PASO 4 */}
+                  <AccordionItem
+                    key="step4"
+                    aria-label="Paso 4"
+                    startContent={
+                      <div className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">4</div>
+                    }
+                    title={<span className="text-sm font-semibold">Activar el caso de uso de Messenger</span>}
+                    subtitle={<span className="text-xs text-default-400">Habilitar Messenger en tu app de Meta</span>}
+                  >
+                    <div className="space-y-3 text-sm text-default-600 pb-2">
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>En tu app de Meta, haz clic en <strong className="text-foreground">&quot;Casos de uso&quot;</strong> en el menú lateral izquierdo.</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Verás una lista de casos de uso disponibles. Busca el que dice:</span>
+                      </div>
+                      <div className="ml-6 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-2.5">
+                        <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">&quot;Interactúa con los clientes en Messenger from Meta&quot;</p>
+                        <p className="text-[11px] text-blue-600/70 dark:text-blue-400/70 mt-0.5">Responde a los mensajes que recibe la página de Facebook de tu empresa.</p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Haz clic en el botón <strong className="text-foreground">&quot;Personalizar&quot;</strong> que aparece al lado derecho del caso de uso de Messenger.</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Si el caso de uso no aparece en la lista, haz clic en <strong className="text-foreground">&quot;Añadir casos de uso&quot;</strong> (esquina superior derecha) y agrégalo.</span>
+                      </div>
+                      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-2.5 mt-2">
+                        <p className="text-xs text-blue-600 dark:text-blue-400">
+                          <strong>Nota:</strong> Dentro de Personalizar podrás configurar los webhooks y permisos necesarios para Messenger.
+                        </p>
+                      </div>
+                    </div>
+                  </AccordionItem>
+
+                  {/* PASO 5 */}
+                  <AccordionItem
+                    key="step5"
+                    aria-label="Paso 5"
+                    startContent={
+                      <div className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">5</div>
+                    }
+                    title={<span className="text-sm font-semibold">Configurar el Webhook</span>}
+                    subtitle={<span className="text-xs text-default-400">Conectar Facebook con tu servidor</span>}
+                  >
+                    <div className="space-y-3 text-sm text-default-600 pb-2">
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Dentro de la personalización de Messenger, busca la sección de <strong className="text-foreground">&quot;Webhooks&quot;</strong> o <strong className="text-foreground">&quot;Configurar la URL de devolución de llamada&quot;</strong>.</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Haz clic en <strong className="text-foreground">&quot;Configurar&quot;</strong> o <strong className="text-foreground">&quot;Editar&quot;</strong> para abrir el formulario del webhook.</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Link2 size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Completa los dos campos del formulario:</span>
+                      </div>
+                      <div className="ml-6 bg-default-50 dark:bg-default-100/50 rounded-lg p-3 space-y-2">
+                        <div>
+                          <p className="text-[10px] text-default-400 font-semibold uppercase">URL de devolución de llamada (Callback URL):</p>
+                          <p className="text-xs mt-0.5">Copia la <strong>Webhook URL</strong> desde el panel &quot;Configurar App&quot; del CRM (recuadro verde, paso 3).</p>
+                        </div>
+                        <Divider />
+                        <div>
+                          <p className="text-[10px] text-default-400 font-semibold uppercase">Token de verificación (Verify Token):</p>
+                          <p className="text-xs mt-0.5">Copia el <strong>Verify Token</strong> desde el mismo panel del CRM. Debe ser <strong>exactamente igual</strong>, sin espacios extra.</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Haz clic en <strong className="text-foreground">&quot;Verificar y guardar&quot;</strong>.</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Una vez verificado, activa las <strong className="text-foreground">suscripciones</strong> (Webhook Fields) para tu página:</span>
+                      </div>
+                      <div className="ml-6 grid grid-cols-2 gap-1">
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle2 size={12} className="text-success" />
+                          <code className="text-xs bg-default-100 px-1.5 py-0.5 rounded">messages</code>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle2 size={12} className="text-success" />
+                          <code className="text-xs bg-default-100 px-1.5 py-0.5 rounded">messaging_postbacks</code>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle2 size={12} className="text-success" />
+                          <code className="text-xs bg-default-100 px-1.5 py-0.5 rounded">message_reads</code>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle2 size={12} className="text-success" />
+                          <code className="text-xs bg-default-100 px-1.5 py-0.5 rounded">message_deliveries</code>
+                        </div>
+                      </div>
+                      <div className="bg-success-50 dark:bg-success-950/30 border border-success-200 dark:border-success-800 rounded-lg p-2.5 mt-2">
+                        <p className="text-xs text-success-600 dark:text-success-400">
+                          <CheckCircle2 size={12} className="inline mr-1" />
+                          Si todo está correcto, Facebook verificará automáticamente tu servidor y guardará la configuración.
+                        </p>
+                      </div>
+                    </div>
+                  </AccordionItem>
+
+                  {/* PASO 6 */}
+                  <AccordionItem
+                    key="step6"
+                    aria-label="Paso 6"
+                    startContent={
+                      <div className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">6</div>
+                    }
+                    title={<span className="text-sm font-semibold">Conectar tu Página de Facebook</span>}
+                    subtitle={<span className="text-xs text-default-400">Paso final: vincular tu página al CRM</span>}
+                  >
+                    <div className="space-y-3 text-sm text-default-600 pb-2">
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Vuelve al CRM y en la tarjeta de <strong className="text-foreground">Facebook Messenger</strong>, haz clic en <strong className="text-foreground">&quot;Conectar Página&quot;</strong>.</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Globe size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Se abrirá una ventana de Facebook pidiendo autorización. <strong className="text-foreground">Inicia sesión</strong> y <strong className="text-foreground">autoriza los permisos</strong> solicitados.</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Selecciona la <strong className="text-foreground">página de Facebook</strong> que deseas conectar al CRM.</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Serás redirigido de vuelta al CRM donde verás tus páginas disponibles. Haz clic en <strong className="text-foreground">&quot;Conectar&quot;</strong> en la página que desees.</span>
+                      </div>
+                      <div className="bg-success-50 dark:bg-success-950/30 border border-success-200 dark:border-success-800 rounded-lg p-2.5 mt-2">
+                        <p className="text-xs text-success-600 dark:text-success-400">
+                          <CheckCircle2 size={12} className="inline mr-1" />
+                          <strong>¡Listo!</strong> Los mensajes que recibas en Facebook Messenger aparecerán automáticamente en la bandeja de conversaciones del CRM.
+                        </p>
+                      </div>
+                    </div>
+                  </AccordionItem>
+
+                  {/* PASO 7 - PUBLICAR */}
+                  <AccordionItem
+                    key="step7"
+                    aria-label="Paso 7"
+                    startContent={
+                      <div className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">7</div>
+                    }
+                    title={<span className="text-sm font-semibold">Publicar la App (Modo producción)</span>}
+                    subtitle={<span className="text-xs text-default-400">Necesario para que funcione con todos los usuarios</span>}
+                  >
+                    <div className="space-y-3 text-sm text-default-600 pb-2">
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>En el menú lateral de tu app, haz clic en <strong className="text-foreground">&quot;Publicar&quot;</strong> (verás un indicador <em>&quot;Sin publicar&quot;</em> al lado).</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Revisa las <strong className="text-foreground">&quot;Acciones requeridas&quot;</strong> en el menú lateral. Meta puede pedir que completes tu <strong>Política de privacidad</strong>, <strong>Eliminación de datos de usuario</strong>, o un <strong>Icono de la aplicación</strong>.</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Puedes completar esos campos en <strong className="text-foreground">Configuración de la aplicación → Información básica</strong>.</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Una vez completados los requisitos, haz clic en <strong className="text-foreground">&quot;Publicar&quot;</strong> para cambiar la app a modo producción.</span>
+                      </div>
+                      <div className="bg-warning-50 dark:bg-warning-950/30 border border-warning-200 dark:border-warning-800 rounded-lg p-2.5 mt-2">
+                        <p className="text-xs text-warning-600 dark:text-warning-400">
+                          <AlertTriangle size={12} className="inline mr-1" />
+                          <strong>Mientras la app esté en modo desarrollo</strong>, solo los administradores y testers de la app podrán interactuar con Messenger. Para que funcione con todos tus clientes, debes publicarla.
+                        </p>
+                      </div>
+                    </div>
+                  </AccordionItem>
+
+                  {/* SOLUCIÓN DE PROBLEMAS */}
+                  <AccordionItem
+                    key="troubleshoot"
+                    aria-label="Solución de Problemas"
+                    startContent={
+                      <div className="w-7 h-7 rounded-full bg-warning-500 text-white flex items-center justify-center">
+                        <AlertTriangle size={14} />
+                      </div>
+                    }
+                    title={<span className="text-sm font-semibold">Solución de Problemas</span>}
+                    subtitle={<span className="text-xs text-default-400">¿Algo no funciona? Revisa aquí</span>}
+                  >
+                    <div className="space-y-3 text-sm text-default-600 pb-2">
+                      <div className="bg-default-50 dark:bg-default-100/50 rounded-lg p-3 space-y-3">
+                        <div>
+                          <p className="text-xs font-bold text-foreground">&quot;Verificación fallida&quot; al configurar webhook</p>
+                          <p className="text-xs text-default-500 mt-0.5">Verifica que el Verify Token en Facebook sea <strong>exactamente igual</strong> al que guardaste en el CRM. Cópialo usando el botón de copiar del panel &quot;Configurar App&quot;. También verifica que tu servidor esté en línea y accesible.</p>
+                        </div>
+                        <Divider />
+                        <div>
+                          <p className="text-xs font-bold text-foreground">&quot;Identificador de aplicación no válido&quot;</p>
+                          <p className="text-xs text-default-500 mt-0.5">El App ID que ingresaste es incorrecto. Verifica que lo copiaste correctamente desde <strong>Configuración de la aplicación → Información básica</strong>.</p>
+                        </div>
+                        <Divider />
+                        <div>
+                          <p className="text-xs font-bold text-foreground">No llegan mensajes al CRM</p>
+                          <p className="text-xs text-default-500 mt-0.5">1. Verifica que activaste los campos <code className="bg-default-100 px-1 rounded">messages</code> en las suscripciones del webhook. 2. Asegúrate de que tu página esté conectada. 3. Si la app está en modo desarrollo, solo los testers pueden enviar mensajes.</p>
+                        </div>
+                        <Divider />
+                        <div>
+                          <p className="text-xs font-bold text-foreground">No puedo enviar mensajes desde el CRM</p>
+                          <p className="text-xs text-default-500 mt-0.5">Facebook solo permite responder mensajes dentro de las primeras <strong>24 horas</strong> después de que el usuario escribió. Después de ese tiempo necesitas usar templates aprobados (Message Tags).</p>
+                        </div>
+                        <Divider />
+                        <div>
+                          <p className="text-xs font-bold text-foreground">La app dice &quot;Sin publicar&quot;</p>
+                          <p className="text-xs text-default-500 mt-0.5">Tu app está en modo desarrollo. Solo los administradores y testers podrán enviar mensajes. Ve al paso 7 para publicar la app y que funcione con todos los usuarios.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </AccordionItem>
+                </Accordion>
+              </ModalBody>
+              <ModalFooter className="border-t border-divider">
+                <Button
+                  size="sm"
+                  variant="flat"
+                  onPress={() => {
+                    onClose();
+                    setFbConfigDrawerOpen(true);
+                  }}
+                  startContent={<Settings size={14} />}
+                >
+                  Ir a Configurar App
+                </Button>
+                <Button color="primary" size="sm" onPress={onClose}>
+                  Entendido
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
     </motion.div>
   );
 }

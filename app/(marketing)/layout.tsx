@@ -75,6 +75,8 @@ export default function MarketingLayout({
             <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-default-500">
               <NextLink className="hover:text-foreground transition-colors" href="/pricing">Precios</NextLink>
               <NextLink className="hover:text-foreground transition-colors" href="/about">Nosotros</NextLink>
+              <NextLink className="hover:text-foreground transition-colors" href="/privacy">Privacidad</NextLink>
+              <NextLink className="hover:text-foreground transition-colors" href="/terms">Términos</NextLink>
               <NextLink className="hover:text-foreground transition-colors" href="mailto:contacto@cconehub.com">Contacto</NextLink>
             </div>
 

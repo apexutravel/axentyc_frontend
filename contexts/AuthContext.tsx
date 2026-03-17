@@ -50,6 +50,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const initAuth = async () => {
       try {
         await refreshUser();
+        // Start proactive token refresh on successful auth init
+        AuthService.startAutoRefresh();
       } catch (error) {
         console.error('Auth initialization failed:', error);
       } finally {
@@ -58,6 +60,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     initAuth();
+
+    return () => {
+      AuthService.stopAutoRefresh();
+    };
   }, []);
 
   const logout = async () => {

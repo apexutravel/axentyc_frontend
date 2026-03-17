@@ -39,6 +39,31 @@ export interface RegisterData {
 export class AuthService {
   private static isRefreshing = false;
   private static refreshPromise: Promise<void> | null = null;
+  private static refreshTimer: ReturnType<typeof setInterval> | null = null;
+
+  /**
+   * Start a background timer that refreshes the access token every 50 min
+   * (before the 1h expiry). Call this after login/register.
+   */
+  static startAutoRefresh(): void {
+    this.stopAutoRefresh();
+    // Refresh every 50 minutes (token lasts 1 hour)
+    this.refreshTimer = setInterval(async () => {
+      try {
+        await this.refresh();
+      } catch {
+        // Refresh failed — token likely revoked, stop trying
+        this.stopAutoRefresh();
+      }
+    }, 50 * 60 * 1000);
+  }
+
+  static stopAutoRefresh(): void {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = null;
+    }
+  }
 
   static async login(credentials: LoginCredentials): Promise<User> {
     try {
@@ -57,6 +82,7 @@ export class AuthService {
       }
 
       const data = await response.json();
+      this.startAutoRefresh();
       return data.user;
     } catch (error: any) {
       if (error.message) {
@@ -83,6 +109,7 @@ export class AuthService {
       }
 
       const data = await response.json();
+      this.startAutoRefresh();
       return data.user;
     } catch (error: any) {
       if (error.message) {
@@ -144,6 +171,7 @@ export class AuthService {
   }
 
   static async logout(): Promise<void> {
+    this.stopAutoRefresh();
     try {
       await fetch(API_ENDPOINTS.auth.logout, {
         method: 'POST',
