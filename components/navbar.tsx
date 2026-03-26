@@ -18,25 +18,29 @@ import { ThemeSwitch } from "@/components/theme-switch";
 
 export const Navbar = () => {
   return (
-    <HeroUINavbar maxWidth="xl" position="sticky">
+    <HeroUINavbar
+      maxWidth="xl"
+      position="sticky"
+      classNames={{
+        base: "bg-background/70 backdrop-blur-xl backdrop-saturate-150 border-b border-divider/50",
+        wrapper: "px-4 sm:px-6",
+      }}
+      height="4rem"
+    >
       <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
         <NavbarBrand as="li" className="gap-3 max-w-fit">
-          <NextLink className="flex justify-start items-center gap-2" href="/">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+          <NextLink className="flex justify-start items-center gap-2.5 group" href="/">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-md shadow-primary/20 group-hover:shadow-lg group-hover:shadow-primary/30 transition-shadow">
               <span className="text-white font-bold text-sm">C</span>
             </div>
-            <p className="font-bold text-inherit text-lg">CconeHub</p>
+            <span className="font-bold text-lg tracking-tight">CconeHub</span>
           </NextLink>
         </NavbarBrand>
-        <ul className="hidden lg:flex gap-4 justify-start ml-2">
+        <ul className="hidden lg:flex gap-1 justify-start ml-4">
           {siteConfig.navItems.map((item) => (
             <NavbarItem key={item.href}>
               <NextLink
-                className={clsx(
-                  linkStyles({ color: "foreground" }),
-                  "data-[active=true]:text-primary data-[active=true]:font-medium",
-                )}
-                color="foreground"
+                className="text-sm font-medium text-default-500 hover:text-foreground transition-colors px-3 py-2 rounded-lg hover:bg-default-100"
                 href={item.href}
               >
                 {item.label}
@@ -47,7 +51,7 @@ export const Navbar = () => {
       </NavbarContent>
 
       <NavbarContent
-        className="hidden sm:flex basis-1/5 sm:basis-full"
+        className="hidden sm:flex basis-1/5 sm:basis-full gap-2"
         justify="end"
       >
         <NavbarItem className="hidden sm:flex">
@@ -55,10 +59,7 @@ export const Navbar = () => {
         </NavbarItem>
         <NavbarItem>
           <NextLink
-            className={clsx(
-              linkStyles({ color: "foreground" }),
-              "text-sm font-medium",
-            )}
+            className="text-sm font-medium text-default-600 hover:text-foreground transition-colors px-3 py-2"
             href="/auth/login"
           >
             Iniciar Sesi&oacute;n
@@ -68,10 +69,12 @@ export const Navbar = () => {
           <Button
             as={NextLink}
             color="primary"
-            href="/pricing"
+            href="/auth/register"
             size="sm"
+            radius="lg"
+            className="font-semibold shadow-md shadow-primary/20"
           >
-            Comenzar Gratis
+            Prueba Gratis
           </Button>
         </NavbarItem>
       </NavbarContent>
@@ -81,36 +84,38 @@ export const Navbar = () => {
         <NavbarMenuToggle />
       </NavbarContent>
 
-      <NavbarMenu>
-        <div className="mx-4 mt-2 flex flex-col gap-2">
+      <NavbarMenu className="bg-background/95 backdrop-blur-xl pt-6">
+        <div className="mx-4 flex flex-col gap-1">
           {siteConfig.navItems.map((item) => (
             <NavbarMenuItem key={item.href}>
               <NextLink
-                className={clsx(
-                  linkStyles({ color: "foreground" }),
-                  "w-full",
-                )}
+                className="block w-full text-base font-medium text-default-600 hover:text-foreground transition-colors py-3 px-3 rounded-lg hover:bg-default-100"
                 href={item.href}
               >
                 {item.label}
               </NextLink>
             </NavbarMenuItem>
           ))}
+          <div className="border-t border-divider my-3" />
           <NavbarMenuItem>
             <NextLink
-              className={clsx(linkStyles({ color: "primary" }), "w-full font-medium")}
+              className="block w-full text-base font-medium text-default-600 hover:text-foreground transition-colors py-3 px-3 rounded-lg hover:bg-default-100"
               href="/auth/login"
             >
               Iniciar Sesi&oacute;n
             </NextLink>
           </NavbarMenuItem>
-          <NavbarMenuItem>
-            <NextLink
-              className={clsx(linkStyles({ color: "primary" }), "w-full font-medium")}
-              href="/pricing"
+          <NavbarMenuItem className="mt-2">
+            <Button
+              as={NextLink}
+              color="primary"
+              href="/auth/register"
+              fullWidth
+              radius="lg"
+              className="font-semibold"
             >
-              Comenzar Gratis
-            </NextLink>
+              Prueba Gratis
+            </Button>
           </NavbarMenuItem>
         </div>
       </NavbarMenu>

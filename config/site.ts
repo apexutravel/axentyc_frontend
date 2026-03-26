@@ -5,11 +5,19 @@ export const siteConfig = {
   description: "SaaS Social CRM Omnichannel Multi-Tenant Platform",
   navItems: [
     {
-      label: "Pricing",
+      label: "Producto",
+      href: "/#producto",
+    },
+    {
+      label: "Integraciones",
+      href: "/#integraciones",
+    },
+    {
+      label: "Precios",
       href: "/pricing",
     },
     {
-      label: "About",
+      label: "Empresa",
       href: "/about",
     },
   ],

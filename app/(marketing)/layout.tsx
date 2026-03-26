@@ -61,30 +61,21 @@ export default function MarketingLayout({
         }}
       />
       <footer className="border-t border-divider">
-        <div className="mx-auto max-w-7xl px-6 py-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            {/* Logo */}
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-white font-bold text-xs">C</span>
-              </div>
-              <span className="font-bold">CconeHub</span>
+        <div className="mx-auto max-w-7xl px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
+              <span className="text-white font-bold text-[10px]">C</span>
             </div>
-
-            {/* Links */}
-            <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-default-500">
-              <NextLink className="hover:text-foreground transition-colors" href="/pricing">Precios</NextLink>
-              <NextLink className="hover:text-foreground transition-colors" href="/about">Nosotros</NextLink>
-              <NextLink className="hover:text-foreground transition-colors" href="/privacy">Privacidad</NextLink>
-              <NextLink className="hover:text-foreground transition-colors" href="/terms">Términos</NextLink>
-              <NextLink className="hover:text-foreground transition-colors" href="mailto:contacto@cconehub.com">Contacto</NextLink>
-            </div>
-
-            {/* Copyright */}
-            <p className="text-xs text-default-400">
-              &copy; {new Date().getFullYear()} CconeHub
-            </p>
+            <span className="text-sm font-semibold">CconeHub</span>
           </div>
+          <nav className="flex flex-wrap items-center justify-center gap-5 text-xs text-default-400">
+            <NextLink className="hover:text-foreground transition-colors" href="/pricing">Precios</NextLink>
+            <NextLink className="hover:text-foreground transition-colors" href="/about">Empresa</NextLink>
+            <NextLink className="hover:text-foreground transition-colors" href="/privacy">Privacidad</NextLink>
+            <NextLink className="hover:text-foreground transition-colors" href="/terms">Términos</NextLink>
+            <NextLink className="hover:text-foreground transition-colors" href="mailto:contacto@cconehub.com">Contacto</NextLink>
+          </nav>
+          <p className="text-xs text-default-400">&copy; {new Date().getFullYear()} CconeHub</p>
         </div>
       </footer>
     </div>

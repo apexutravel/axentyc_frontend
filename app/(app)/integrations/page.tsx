@@ -1884,15 +1884,85 @@ export default function IntegrationsPage() {
                     </div>
                   </AccordionItem>
 
-                  {/* PASO 6 */}
+                  {/* PASO 6 - PERMISOS */}
                   <AccordionItem
                     key="step6"
                     aria-label="Paso 6"
                     startContent={
                       <div className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">6</div>
                     }
+                    title={<span className="text-sm font-semibold">Configurar Permisos de la App</span>}
+                    subtitle={<span className="text-xs text-default-400">Permisos necesarios para enviar y recibir mensajes</span>}
+                  >
+                    <div className="space-y-3 text-sm text-default-600 pb-2">
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Dentro de <strong className="text-foreground">Casos de uso → Messenger → Personalizar</strong>, busca la sección de <strong className="text-foreground">&quot;Permisos&quot;</strong>.</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Debes agregar y activar los siguientes permisos:</span>
+                      </div>
+                      <div className="ml-6 bg-default-50 dark:bg-default-100/50 rounded-lg p-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 size={12} className="text-success shrink-0" />
+                          <div>
+                            <code className="text-xs bg-default-100 px-1.5 py-0.5 rounded font-semibold">pages_messaging</code>
+                            <p className="text-[11px] text-default-400 mt-0.5">Permite enviar y recibir mensajes por Messenger. <strong className="text-foreground">Obligatorio.</strong></p>
+                          </div>
+                        </div>
+                        <Divider />
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 size={12} className="text-success shrink-0" />
+                          <div>
+                            <code className="text-xs bg-default-100 px-1.5 py-0.5 rounded font-semibold">pages_read_engagement</code>
+                            <p className="text-[11px] text-default-400 mt-0.5">Permite leer información de tu página de Facebook.</p>
+                          </div>
+                        </div>
+                        <Divider />
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 size={12} className="text-success shrink-0" />
+                          <div>
+                            <code className="text-xs bg-default-100 px-1.5 py-0.5 rounded font-semibold">pages_manage_metadata</code>
+                            <p className="text-[11px] text-default-400 mt-0.5">Permite suscribir la página al webhook para recibir eventos.</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Para cada permiso, haz clic en <strong className="text-foreground">&quot;Agregar&quot;</strong> o activa el toggle correspondiente.</span>
+                      </div>
+
+                      <div className="bg-warning-50 dark:bg-warning-950/30 border border-warning-200 dark:border-warning-800 rounded-lg p-2.5 mt-2 space-y-1.5">
+                        <p className="text-xs text-warning-600 dark:text-warning-400">
+                          <AlertTriangle size={12} className="inline mr-1" />
+                          <strong>Modo desarrollo vs. Producción:</strong>
+                        </p>
+                        <p className="text-xs text-warning-600 dark:text-warning-400">
+                          • En <strong>modo desarrollo</strong>, estos permisos funcionan sin revisión, pero <strong>solo para administradores y testers</strong> de la app.
+                        </p>
+                        <p className="text-xs text-warning-600 dark:text-warning-400">
+                          • Para que <strong>cualquier cliente</strong> pueda escribirte por Messenger, debes enviar la app a <strong>Revisión de la aplicación</strong> (App Review) — ver paso 8.
+                        </p>
+                      </div>
+
+                      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-2.5 mt-1">
+                        <p className="text-xs text-blue-600 dark:text-blue-400">
+                          <strong>Tip para probar:</strong> Mientras estés en modo desarrollo, agrega testers en <strong>Roles de la aplicación</strong> (menú lateral). Esas personas podrán enviarte mensajes por Messenger sin necesidad de App Review.
+                        </p>
+                      </div>
+                    </div>
+                  </AccordionItem>
+
+                  {/* PASO 7 */}
+                  <AccordionItem
+                    key="step7"
+                    aria-label="Paso 7"
+                    startContent={
+                      <div className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">7</div>
+                    }
                     title={<span className="text-sm font-semibold">Conectar tu Página de Facebook</span>}
-                    subtitle={<span className="text-xs text-default-400">Paso final: vincular tu página al CRM</span>}
+                    subtitle={<span className="text-xs text-default-400">Vincular tu página al CRM</span>}
                   >
                     <div className="space-y-3 text-sm text-default-600 pb-2">
                       <div className="flex items-start gap-2">
@@ -1920,37 +1990,65 @@ export default function IntegrationsPage() {
                     </div>
                   </AccordionItem>
 
-                  {/* PASO 7 - PUBLICAR */}
+                  {/* PASO 8 - PUBLICAR Y APP REVIEW */}
                   <AccordionItem
-                    key="step7"
-                    aria-label="Paso 7"
+                    key="step8"
+                    aria-label="Paso 8"
                     startContent={
-                      <div className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">7</div>
+                      <div className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">8</div>
                     }
-                    title={<span className="text-sm font-semibold">Publicar la App (Modo producción)</span>}
+                    title={<span className="text-sm font-semibold">Publicar la App y Revisión de Permisos</span>}
                     subtitle={<span className="text-xs text-default-400">Necesario para que funcione con todos los usuarios</span>}
                   >
                     <div className="space-y-3 text-sm text-default-600 pb-2">
+                      <p className="text-xs font-semibold text-foreground">A) Completar información requerida</p>
                       <div className="flex items-start gap-2">
                         <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
-                        <span>En el menú lateral de tu app, haz clic en <strong className="text-foreground">&quot;Publicar&quot;</strong> (verás un indicador <em>&quot;Sin publicar&quot;</em> al lado).</span>
+                        <span>Revisa las <strong className="text-foreground">&quot;Acciones requeridas&quot;</strong> en el menú lateral. Meta puede pedir:</span>
+                      </div>
+                      <div className="ml-6 space-y-1">
+                        <p className="text-xs">• <strong>URL de la Política de privacidad</strong> — usa <code className="bg-default-100 px-1 rounded text-[11px]">https://tudominio.com/privacy</code></p>
+                        <p className="text-xs">• <strong>URL de las Condiciones del servicio</strong> — usa <code className="bg-default-100 px-1 rounded text-[11px]">https://tudominio.com/terms</code></p>
+                        <p className="text-xs">• <strong>Eliminación de datos de usuario</strong> — URL o instrucciones de cómo eliminar datos</p>
+                        <p className="text-xs">• <strong>Icono de la aplicación</strong> — imagen de 1024x1024 px</p>
+                        <p className="text-xs">• <strong>Categoría</strong> — selecciona la más adecuada para tu negocio</p>
                       </div>
                       <div className="flex items-start gap-2">
                         <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
-                        <span>Revisa las <strong className="text-foreground">&quot;Acciones requeridas&quot;</strong> en el menú lateral. Meta puede pedir que completes tu <strong>Política de privacidad</strong>, <strong>Eliminación de datos de usuario</strong>, o un <strong>Icono de la aplicación</strong>.</span>
+                        <span>Completa estos campos en <strong className="text-foreground">Configuración de la aplicación → Información básica</strong>.</span>
+                      </div>
+
+                      <Divider className="my-1" />
+
+                      <p className="text-xs font-semibold text-foreground">B) Revisión de la aplicación (App Review)</p>
+                      <div className="flex items-start gap-2">
+                        <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
+                        <span>Algunos permisos (como <code className="bg-default-100 px-1 rounded text-xs">pages_messaging</code>) requieren pasar por la <strong className="text-foreground">Revisión de la aplicación</strong> de Meta para funcionar con usuarios reales.</span>
                       </div>
                       <div className="flex items-start gap-2">
                         <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
-                        <span>Puedes completar esos campos en <strong className="text-foreground">Configuración de la aplicación → Información básica</strong>.</span>
+                        <span>Si ves el mensaje <em>&quot;Este permiso requiere la finalización del proceso de revisión&quot;</em>, debes enviar tu app a revisión.</span>
                       </div>
                       <div className="flex items-start gap-2">
                         <ChevronRight size={14} className="mt-0.5 text-blue-500 shrink-0" />
-                        <span>Una vez completados los requisitos, haz clic en <strong className="text-foreground">&quot;Publicar&quot;</strong> para cambiar la app a modo producción.</span>
+                        <span>En el menú lateral, ve a <strong className="text-foreground">&quot;Publicar&quot;</strong> y sigue las instrucciones. Meta te pedirá:</span>
                       </div>
-                      <div className="bg-warning-50 dark:bg-warning-950/30 border border-warning-200 dark:border-warning-800 rounded-lg p-2.5 mt-2">
+                      <div className="ml-6 space-y-1">
+                        <p className="text-xs">• Una <strong>descripción detallada</strong> de cómo usas Messenger (ej: &quot;Usamos Messenger para responder consultas de clientes desde nuestro CRM&quot;).</p>
+                        <p className="text-xs">• Un <strong>video o capturas de pantalla</strong> mostrando cómo funciona la integración.</p>
+                        <p className="text-xs">• Completar la <strong>verificación del negocio</strong> si se requiere.</p>
+                      </div>
+
+                      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-2.5 mt-2">
+                        <p className="text-xs text-blue-600 dark:text-blue-400">
+                          <strong>Mientras esperas la revisión</strong>, puedes probar la integración completa en modo desarrollo. Agrega testers desde <strong>Roles de la aplicación</strong> en el menú lateral.
+                        </p>
+                      </div>
+
+                      <div className="bg-warning-50 dark:bg-warning-950/30 border border-warning-200 dark:border-warning-800 rounded-lg p-2.5 mt-1">
                         <p className="text-xs text-warning-600 dark:text-warning-400">
                           <AlertTriangle size={12} className="inline mr-1" />
-                          <strong>Mientras la app esté en modo desarrollo</strong>, solo los administradores y testers de la app podrán interactuar con Messenger. Para que funcione con todos tus clientes, debes publicarla.
+                          <strong>Sin App Review aprobado</strong>, solo los administradores y testers de la app podrán enviar/recibir mensajes. Los clientes reales no podrán interactuar hasta que Meta apruebe los permisos.
                         </p>
                       </div>
                     </div>
@@ -1981,18 +2079,23 @@ export default function IntegrationsPage() {
                         </div>
                         <Divider />
                         <div>
+                          <p className="text-xs font-bold text-foreground">&quot;Este permiso requiere revisión de la aplicación&quot;</p>
+                          <p className="text-xs text-default-500 mt-0.5">Los permisos como <code className="bg-default-100 px-1 rounded">pages_messaging</code> funcionan en modo desarrollo solo para admins/testers. Para usuarios reales, envía la app a revisión (paso 8). Mientras tanto, agrega testers en <strong>Roles de la aplicación</strong>.</p>
+                        </div>
+                        <Divider />
+                        <div>
                           <p className="text-xs font-bold text-foreground">No llegan mensajes al CRM</p>
-                          <p className="text-xs text-default-500 mt-0.5">1. Verifica que activaste los campos <code className="bg-default-100 px-1 rounded">messages</code> en las suscripciones del webhook. 2. Asegúrate de que tu página esté conectada. 3. Si la app está en modo desarrollo, solo los testers pueden enviar mensajes.</p>
+                          <p className="text-xs text-default-500 mt-0.5">1. Verifica los campos <code className="bg-default-100 px-1 rounded">messages</code> en las suscripciones del webhook. 2. Asegúrate de que tu página esté conectada. 3. Verifica que el permiso <code className="bg-default-100 px-1 rounded">pages_messaging</code> esté activo. 4. Si la app está en modo desarrollo, solo los testers pueden enviar mensajes.</p>
                         </div>
                         <Divider />
                         <div>
                           <p className="text-xs font-bold text-foreground">No puedo enviar mensajes desde el CRM</p>
-                          <p className="text-xs text-default-500 mt-0.5">Facebook solo permite responder mensajes dentro de las primeras <strong>24 horas</strong> después de que el usuario escribió. Después de ese tiempo necesitas usar templates aprobados (Message Tags).</p>
+                          <p className="text-xs text-default-500 mt-0.5">Facebook solo permite responder dentro de las primeras <strong>24 horas</strong> después de que el usuario escribió. Después de ese tiempo necesitas usar templates aprobados (Message Tags).</p>
                         </div>
                         <Divider />
                         <div>
                           <p className="text-xs font-bold text-foreground">La app dice &quot;Sin publicar&quot;</p>
-                          <p className="text-xs text-default-500 mt-0.5">Tu app está en modo desarrollo. Solo los administradores y testers podrán enviar mensajes. Ve al paso 7 para publicar la app y que funcione con todos los usuarios.</p>
+                          <p className="text-xs text-default-500 mt-0.5">Tu app está en modo desarrollo. Solo los administradores y testers podrán enviar mensajes. Ve al paso 8 para publicar la app y solicitar la revisión de permisos.</p>
                         </div>
                       </div>
                     </div>
