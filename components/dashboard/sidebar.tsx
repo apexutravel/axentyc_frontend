@@ -66,17 +66,17 @@ export function Sidebar({ items }: SidebarProps) {
               initial={{ opacity: 0 }}
             >
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-white font-bold text-sm">C</span>
+                <span className="text-white font-bold text-sm">A</span>
               </div>
               <span className="font-bold text-lg whitespace-nowrap">
-                CconeHub
+                AXENTYC
               </span>
             </motion.div>
           )}
         </AnimatePresence>
         {collapsed && (
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center mx-auto">
-            <span className="text-white font-bold text-sm">C</span>
+            <span className="text-white font-bold text-sm">A</span>
           </div>
         )}
       </div>

@@ -31,9 +31,9 @@ export const Navbar = () => {
         <NavbarBrand as="li" className="gap-3 max-w-fit">
           <NextLink className="flex justify-start items-center gap-2.5 group" href="/">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-md shadow-primary/20 group-hover:shadow-lg group-hover:shadow-primary/30 transition-shadow">
-              <span className="text-white font-bold text-sm">C</span>
+              <span className="text-white font-bold text-sm">A</span>
             </div>
-            <span className="font-bold text-lg tracking-tight">CconeHub</span>
+            <span className="font-bold text-lg tracking-tight">AXENTYC</span>
           </NextLink>
         </NavbarBrand>
         <ul className="hidden lg:flex gap-1 justify-start ml-4">

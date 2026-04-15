@@ -137,14 +137,14 @@ const testimonials = [
     name: "María González",
     role: "Directora Comercial",
     company: "TechRetail MX",
-    text: "Pasamos de responder en 4 horas a menos de 5 minutos. CconeHub transformó nuestra operación de atención al cliente y triplicó nuestras conversiones.",
+    text: "Pasamos de responder en 4 horas a menos de 5 minutos. AXENTYC transformó nuestra operación de atención al cliente y triplicó nuestras conversiones.",
     stars: 5,
   },
   {
     name: "Carlos Mendoza",
     role: "CEO & Fundador",
     company: "ServiPlus CO",
-    text: "Tener WhatsApp, Instagram y Facebook en una sola bandeja fue un game-changer. Nuestro equipo es 3x más productivo desde que implementamos CconeHub.",
+    text: "Tener WhatsApp, Instagram y Facebook en una sola bandeja fue un game-changer. Nuestro equipo es 3x más productivo desde que implementamos AXENTYC.",
     stars: 5,
   },
   {
@@ -158,7 +158,7 @@ const testimonials = [
 
 const faqs = [
   {
-    q: "¿Cuánto tiempo toma configurar CconeHub?",
+    q: "¿Cuánto tiempo toma configurar AXENTYC?",
     a: "La configuración básica toma menos de 10 minutos. Conectar canales como Facebook Messenger o email es un proceso guiado paso a paso. Tu equipo puede estar operando el mismo día.",
   },
   {
@@ -175,7 +175,7 @@ const faqs = [
   },
   {
     q: "¿Funciona para equipos grandes?",
-    a: "Sí. CconeHub está diseñado para escalar desde freelancers hasta empresas con cientos de agentes. Incluye asignación automática de conversaciones, roles de equipo, y métricas por agente.",
+    a: "Sí. AXENTYC está diseñado para escalar desde freelancers hasta empresas con cientos de agentes. Incluye asignación automática de conversaciones, roles de equipo, y métricas por agente.",
   },
   {
     q: "¿Ofrecen soporte técnico?",
@@ -291,7 +291,7 @@ export default function HomePage() {
                       <div className="w-3 h-3 rounded-full bg-warning/60" />
                       <div className="w-3 h-3 rounded-full bg-success/60" />
                     </div>
-                    <span className="text-xs text-default-400 font-medium ml-2">CconeHub — Inbox</span>
+                    <span className="text-xs text-default-400 font-medium ml-2">AXENTYC — Inbox</span>
                   </div>
 
                   {/* Content */}
@@ -504,7 +504,7 @@ export default function HomePage() {
                       <div className="w-3 h-3 rounded-full bg-warning/60" />
                       <div className="w-3 h-3 rounded-full bg-success/60" />
                     </div>
-                    <span className="text-xs text-default-400 font-medium ml-2">CconeHub — Deals Pipeline</span>
+                    <span className="text-xs text-default-400 font-medium ml-2">AXENTYC — Deals Pipeline</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="text-[10px] text-default-400 bg-default-100 px-2 py-0.5 rounded-md">Q1 2025</div>
@@ -606,7 +606,7 @@ export default function HomePage() {
                     <div className="w-3 h-3 rounded-full bg-warning/60" />
                     <div className="w-3 h-3 rounded-full bg-success/60" />
                   </div>
-                  <span className="text-xs text-default-400 font-medium ml-2">CconeHub — Contact Center</span>
+                  <span className="text-xs text-default-400 font-medium ml-2">AXENTYC — Contact Center</span>
                   <div className="ml-auto flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
                     <span className="text-[10px] text-success font-medium">En vivo</span>
@@ -816,7 +816,7 @@ export default function HomePage() {
                     <div className="w-3 h-3 rounded-full bg-warning/60" />
                     <div className="w-3 h-3 rounded-full bg-success/60" />
                   </div>
-                  <span className="text-xs text-default-400 font-medium ml-2">CconeHub — Automatización</span>
+                  <span className="text-xs text-default-400 font-medium ml-2">AXENTYC — Automatización</span>
                   <div className="ml-auto">
                     <div className="text-[10px] font-semibold text-success bg-success/10 px-2 py-0.5 rounded-md">Activo</div>
                   </div>
@@ -1189,7 +1189,7 @@ export default function HomePage() {
                       const email = data.get("email");
                       const company = data.get("company");
                       const message = data.get("message");
-                      window.location.href = `mailto:contacto@cconehub.com?subject=Contacto desde landing — ${company || name}&body=${encodeURIComponent(`Nombre: ${name}\nEmpresa: ${company}\nEmail: ${email}\n\n${message}`)}`;
+                      window.location.href = `mailto:contacto@apexucode.com?subject=Contacto desde landing — ${company || name}&body=${encodeURIComponent(`Nombre: ${name}\nEmpresa: ${company}\nEmail: ${email}\n\n${message}`)}`;
                     }}
                   >
                     <div className="grid sm:grid-cols-2 gap-4">
@@ -1256,7 +1256,7 @@ export default function HomePage() {
               </h2>
               <p className="text-lg text-default-400 mb-8 leading-relaxed">
                 Únete a las empresas que ya centralizan sus comunicaciones,
-                automatizan su operación y cierran más deals con CconeHub.
+                automatizan su operación y cierran más deals con AXENTYC.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 mb-8">
                 <Button
@@ -1285,7 +1285,7 @@ export default function HomePage() {
                 <div className="flex items-center gap-2"><CheckCircle2 size={15} className="text-success" /> Sin tarjeta de crédito</div>
                 <div className="flex items-center gap-2"><CheckCircle2 size={15} className="text-success" /> Setup en minutos</div>
                 <div className="flex items-center gap-2"><CheckCircle2 size={15} className="text-success" /> Cancela cuando quieras</div>
-                <div className="flex items-center gap-2"><Mail size={15} className="text-primary" /> contacto@cconehub.com</div>
+                <div className="flex items-center gap-2"><Mail size={15} className="text-primary" /> contacto@apexucode.com</div>
               </div>
             </motion.div>
           </div>

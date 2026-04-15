@@ -11,9 +11,9 @@ export default function AuthLayout({
       <div className="hidden lg:flex lg:w-1/2 bg-primary/5 flex-col justify-between p-12">
         <NextLink className="flex items-center gap-2" href="/">
           <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-white font-bold text-lg">C</span>
+            <span className="text-white font-bold text-lg">A</span>
           </div>
-          <span className="font-bold text-xl">CconeHub</span>
+          <span className="font-bold text-xl">AXENTYC</span>
         </NextLink>
 
         <div className="max-w-md">
@@ -52,7 +52,7 @@ export default function AuthLayout({
         </div>
 
         <p className="text-xs text-default-400">
-          &copy; {new Date().getFullYear()} CconeHub. Todos los derechos reservados.
+          &copy; {new Date().getFullYear()} AXENTYC. Todos los derechos reservados.
         </p>
       </div>
 
@@ -63,9 +63,9 @@ export default function AuthLayout({
           <div className="lg:hidden mb-8 flex justify-center">
             <NextLink className="flex items-center gap-2" href="/">
               <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-white font-bold text-lg">C</span>
+                <span className="text-white font-bold text-lg">A</span>
               </div>
-              <span className="font-bold text-xl">CconeHub</span>
+              <span className="font-bold text-xl">AXENTYC</span>
             </NextLink>
           </div>
           {children}

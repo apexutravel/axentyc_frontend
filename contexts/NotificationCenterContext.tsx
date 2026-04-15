@@ -32,7 +32,7 @@ interface NotificationCenterContextType {
   setActiveConversationId: (conversationId: string | null) => void;
 }
 
-const STORAGE_KEY = "cconehub_notifications";
+const STORAGE_KEY = "axentyc_notifications";
 const MAX_NOTIFICATIONS = 50;
 
 const NotificationCenterContext = createContext<NotificationCenterContextType | undefined>(undefined);
@@ -91,7 +91,7 @@ function sendDesktopNotification(title: string, body: string) {
   if (document.visibilityState === "visible") return;
   if (Notification.permission !== "granted") return;
   try {
-    new Notification(title, { body, icon: "/favicon.ico", tag: "cconehub-chat" });
+    new Notification(title, { body, icon: "/icon", tag: "axentyc-chat" });
   } catch {
     // notification not supported (e.g. some mobile browsers)
   }

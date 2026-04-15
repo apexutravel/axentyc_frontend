@@ -17,6 +17,9 @@ import {
   Headphones,
   Zap,
   TrendingUp,
+  MapPin,
+  Building2,
+  CalendarDays,
 } from "lucide-react";
 
 const fadeUp = (delay = 0) => ({
@@ -79,18 +82,29 @@ export default function AboutPage() {
         <div className="mx-auto max-w-7xl px-6">
           <motion.div className="text-center max-w-4xl mx-auto" {...fadeUp()}>
             <h1 className="text-3xl md:text-5xl font-black tracking-tight mb-8">
-              Control Center
-              <br />
               <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                One Hub
+                AXENTYC
               </span>
             </h1>
-            <p className="text-xl md:text-2xl text-default-400 leading-relaxed max-w-3xl mx-auto">
-              Somos <strong className="text-foreground">CconeHub</strong> — la plataforma
-              que centraliza todas las conversaciones de tu empresa en un solo lugar.
-              Nacimos para resolver un problema real: equipos de ventas y soporte
-              perdidos entre múltiples apps, sin visibilidad ni control.
+            <p className="text-xl md:text-2xl text-default-400 leading-relaxed max-w-3xl mx-auto mb-8">
+              <strong className="text-foreground">AXENTYC</strong> es la plataforma
+              omnichannel de nueva generación desarrollada por{" "}
+              <a href="https://www.apexucode.com" target="_blank" rel="noopener noreferrer" className="text-foreground font-bold hover:text-primary transition-colors">Apex Universal Code LLC</a>,
+              una empresa de tecnología con sede en Miami, Florida.
+              Centralizamos todas las conversaciones de tu empresa en un solo lugar
+              para que tu equipo de ventas y soporte deje de perderse entre múltiples apps.
             </p>
+            <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-default-400">
+              <span className="flex items-center gap-1.5">
+                <MapPin size={15} className="text-primary" /> Miami, FL
+              </span>
+              <a href="https://www.apexucode.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-foreground transition-colors">
+                <Building2 size={15} className="text-primary" /> Apex Universal Code LLC
+              </a>
+              <span className="flex items-center gap-1.5">
+                <CalendarDays size={15} className="text-primary" /> Desde 2023
+              </span>
+            </div>
           </motion.div>
         </div>
       </section>
@@ -190,14 +204,23 @@ export default function AboutPage() {
                       ¿Quiénes somos?
                     </h3>
                     <p className="text-lg text-default-500 leading-relaxed mb-6">
-                      Somos un equipo de ingenieros, diseñadores y especialistas en producto
-                      apasionados por la tecnología y la experiencia del cliente.
+                      <a
+                        href="https://www.apexucode.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-foreground font-bold hover:text-primary transition-colors"
+                      >
+                        Apex Universal Code LLC
+                      </a>{" "}
+                      es una empresa de tecnología fundada en 2023 en Miami, Florida,
+                      enfocada en construir soluciones de software que transforman la forma
+                      en que las empresas se comunican con sus clientes.
                     </p>
                     <p className="text-lg text-default-500 leading-relaxed">
-                      Creamos <strong className="text-foreground">Control Center One Hub (CconeHub)</strong>{" "}
-                      porque creíamos que las herramientas de gestión de conversaciones
-                      podían ser más simples, más potentes y más accesibles.
-                      Cada día trabajamos para que tu equipo venda más y atienda mejor.
+                      <strong className="text-foreground">AXENTYC</strong> es nuestro producto
+                      insignia: una plataforma omnichannel con CRM, automatizaciones e IA
+                      diseñada para que equipos de ventas y soporte conviertan cada
+                      conversación en una oportunidad de negocio.
                     </p>
                   </div>
                   <div className="relative bg-gradient-to-br from-danger/10 to-pink/10 p-12 md:p-16 flex items-center justify-center">
@@ -218,9 +241,9 @@ export default function AboutPage() {
         <div className="mx-auto max-w-7xl px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
             {[
-              { value: "2024", label: "Fundación", icon: Rocket },
-              { value: "500+", label: "Empresas activas", icon: Users },
-              { value: "10K+", label: "Conversaciones/día", icon: Zap },
+              { value: "2023", label: "Fundación", icon: Rocket },
+              { value: "Miami", label: "Sede principal", icon: MapPin },
+              { value: "5+", label: "Canales integrados", icon: Zap },
               { value: "99.9%", label: "Uptime SLA", icon: TrendingUp },
             ].map((stat, idx) => {
               const Icon = stat.icon;
@@ -272,7 +295,7 @@ export default function AboutPage() {
               </Button>
               <Button
                 as="a"
-                href="mailto:contacto@cconehub.com"
+                href="mailto:contacto@apexucode.com"
                 radius="full"
                 size="lg"
                 variant="bordered"
@@ -281,7 +304,7 @@ export default function AboutPage() {
               </Button>
             </div>
             <p className="text-sm text-default-400 mt-8">
-              contacto@cconehub.com · cconehub.com
+              contacto@apexucode.com · apexucode.com
             </p>
           </motion.div>
         </div>

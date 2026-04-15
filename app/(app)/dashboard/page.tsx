@@ -205,7 +205,7 @@ export default function DashboardPage() {
                 { stage: "Nuevo Lead", count: 12, value: "$18,200", color: "bg-blue-500" },
                 { stage: "Contactado", count: 8, value: "$12,400", color: "bg-yellow-500" },
                 { stage: "Propuesta", count: 5, value: "$24,500", color: "bg-purple-500" },
-                { stage: "Negociaci\u00f3n", count: 3, value: "$15,800", color: "bg-orange-500" },
+                { stage: "Negociación", count: 3, value: "$15,800", color: "bg-orange-500" },
                 { stage: "Cerrado", count: 7, value: "$32,100", color: "bg-green-500" },
               ].map((pipeline) => (
                 <div key={pipeline.stage} className="space-y-2">

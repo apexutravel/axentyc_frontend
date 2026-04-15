@@ -25,7 +25,7 @@ export default function WidgetLoader({ enabled = false }: WidgetLoaderProps) {
         const script = document.createElement("script");
         script.innerHTML = `
           (function() {
-            window.CconeHubWidget = {
+            window.AXENTYCWidget = {
               widgetId: '${config.widgetId}',
               apiUrl: '${process.env.NEXT_PUBLIC_API_URL}'
             };

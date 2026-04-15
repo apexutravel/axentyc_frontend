@@ -81,13 +81,13 @@ messaging.onBackgroundMessage((payload) => {
       return;
     }
 
-    const notificationTitle = payload.notification?.title || 'CconeHub';
+    const notificationTitle = payload.notification?.title || 'AXENTYC';
     const notificationOptions = {
       body: payload.notification?.body || 'Nuevo mensaje',
-      icon: '/favicon.ico',
-      badge: '/favicon.ico',
+      icon: '/icon',
+      badge: '/icon',
       data: payload.data,
-      tag: 'cconehub-push',
+      tag: 'axentyc-push',
       requireInteraction: true,
     };
 

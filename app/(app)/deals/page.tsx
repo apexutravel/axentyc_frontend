@@ -42,7 +42,7 @@ const pipeline: { stage: string; color: string; deals: Deal[] }[] = [
     ],
   },
   {
-    stage: "Negociaci\u00f3n",
+    stage: "Negociación",
     color: "bg-orange-500",
     deals: [
       { id: "8", title: "Multi-Sede", contact: "Fernando Ruiz", value: "$25,000", probability: 75 },

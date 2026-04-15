@@ -17,7 +17,7 @@ const planInfo: Record<string, { name: string; color: "default" | "primary" | "s
   starter: {
     name: "Starter",
     color: "default",
-    description: "Prueba gratuita de 14 d\u00edas",
+    description: "Prueba gratuita de 14 días",
   },
   pro: {
     name: "Pro",
@@ -61,7 +61,7 @@ function RegisterForm() {
     try {
       await AuthService.register(formData);
       await refreshUser();
-      toast.success("¡Cuenta creada exitosamente! Bienvenido a CconeHub");
+      toast.success("¡Cuenta creada exitosamente! Bienvenido a AXENTYC");
       router.push("/dashboard");
     } catch (err: any) {
       const errorMessage = err.message || "Error al registrarse";
@@ -81,7 +81,7 @@ function RegisterForm() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Crear Cuenta</h1>
         <p className="text-sm text-default-500 mt-2">
-          Reg&iacute;strate para comenzar a usar CconeHub
+          Reg&iacute;strate para comenzar a usar AXENTYC
         </p>
       </div>
 

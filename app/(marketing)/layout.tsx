@@ -20,7 +20,7 @@ export default function MarketingLayout({
       <Navbar />
       <main className="flex-grow w-full min-w-0">{children}</main>
       <Script
-        id="cconehub-widget-loader"
+        id="axentyc-widget-loader"
         strategy="afterInteractive"
         dangerouslySetInnerHTML={{
           __html: `
@@ -48,7 +48,7 @@ export default function MarketingLayout({
               var runtimeApiUrl = resolveApiUrl(configuredApiUrl);
               var runtimeScriptHost = runtimeApiUrl.replace(/\\/api\\/v1\\/?$/, '');
 
-              window.CconeHubWidget = {
+              window.AXENTYCWidget = {
                 widgetId: configuredWidgetId,
                 apiUrl: runtimeApiUrl
               };
@@ -62,20 +62,28 @@ export default function MarketingLayout({
       />
       <footer className="border-t border-divider">
         <div className="mx-auto max-w-7xl px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
-              <span className="text-white font-bold text-[10px]">C</span>
+          <div className="flex flex-col items-center md:items-start gap-1">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
+                <span className="text-white font-bold text-[10px]">A</span>
+              </div>
+              <span className="text-sm font-semibold">AXENTYC</span>
             </div>
-            <span className="text-sm font-semibold">CconeHub</span>
+            <span className="text-[11px] text-default-400">
+              Un producto de{" "}
+              <a href="https://www.apexucode.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
+                Apex Universal Code
+              </a>
+            </span>
           </div>
           <nav className="flex flex-wrap items-center justify-center gap-5 text-xs text-default-400">
             <NextLink className="hover:text-foreground transition-colors" href="/pricing">Precios</NextLink>
             <NextLink className="hover:text-foreground transition-colors" href="/about">Empresa</NextLink>
             <NextLink className="hover:text-foreground transition-colors" href="/privacy">Privacidad</NextLink>
             <NextLink className="hover:text-foreground transition-colors" href="/terms">Términos</NextLink>
-            <NextLink className="hover:text-foreground transition-colors" href="mailto:contacto@cconehub.com">Contacto</NextLink>
+            <NextLink className="hover:text-foreground transition-colors" href="mailto:contacto@apexucode.com">Contacto</NextLink>
           </nav>
-          <p className="text-xs text-default-400">&copy; {new Date().getFullYear()} CconeHub</p>
+          <p className="text-xs text-default-400">&copy; {new Date().getFullYear()} Apex Universal Code LLC</p>
         </div>
       </footer>
     </div>

@@ -55,7 +55,7 @@ export default function LoginPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Iniciar Sesi&oacute;n</h1>
         <p className="text-sm text-default-500 mt-2">
-          Ingresa a tu cuenta de CconeHub
+          Ingresa a tu cuenta de AXENTYC
         </p>
       </div>
 

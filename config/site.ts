@@ -1,7 +1,7 @@
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: "CconeHub",
+  name: "AXENTYC",
   description: "SaaS Social CRM Omnichannel Multi-Tenant Platform",
   navItems: [
     {
@@ -109,6 +109,7 @@ export const siteConfig = {
     },
   ],
   links: {
-    website: "https://cconehub.com",
+    website: "https://axentyc.apexucode.com",
+    parent: "https://www.apexucode.com",
   },
 };

@@ -1,8 +1,8 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Términos y Condiciones — CconeHub",
-  description: "Términos y condiciones de uso de la plataforma CconeHub.",
+  title: "Términos y Condiciones — AXENTYC",
+  description: "Términos y condiciones de uso de la plataforma AXENTYC.",
 };
 
 export default function TermsPage() {
@@ -18,7 +18,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-semibold text-foreground">1. Aceptación de los Términos</h2>
           <p>
-            Al acceder y utilizar <strong>CconeHub</strong> (el &quot;Servicio&quot;), aceptas estar vinculado por estos
+            Al acceder y utilizar <strong>AXENTYC</strong> (el &quot;Servicio&quot;), aceptas estar vinculado por estos
             Términos y Condiciones. Si no estás de acuerdo con alguna parte de estos términos, no debes utilizar el Servicio.
           </p>
           <p>
@@ -31,7 +31,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-semibold text-foreground">2. Descripción del Servicio</h2>
           <p>
-            CconeHub es una plataforma de gestión de comunicaciones y CRM que permite a las empresas:
+            AXENTYC es una plataforma de gestión de comunicaciones y CRM que permite a las empresas:
           </p>
           <ul className="list-disc pl-5 space-y-1">
             <li>Centralizar conversaciones desde múltiples canales (Facebook Messenger, Instagram, correo electrónico, chat en vivo).</li>
@@ -74,10 +74,10 @@ export default function TermsPage() {
             proveedores de correo electrónico. Al configurar estas integraciones:
           </p>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Autorizas a CconeHub a acceder a las APIs de dichas plataformas en tu nombre.</li>
+            <li>Autorizas a AXENTYC a acceder a las APIs de dichas plataformas en tu nombre.</li>
             <li>Eres responsable de cumplir con los términos de servicio de cada plataforma integrada.</li>
             <li>Las credenciales que proporcionas (App ID, App Secret, tokens) se almacenan de forma segura y se utilizan exclusivamente para operar las integraciones.</li>
-            <li>CconeHub no es responsable de cambios en las APIs o políticas de terceros que afecten la funcionalidad de las integraciones.</li>
+            <li>AXENTYC no es responsable de cambios en las APIs o políticas de terceros que afecten la funcionalidad de las integraciones.</li>
           </ul>
         </section>
 
@@ -99,7 +99,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-semibold text-foreground">7. Propiedad Intelectual</h2>
           <p>
-            Todo el contenido, código, diseño, marcas y materiales del Servicio son propiedad de CconeHub
+            Todo el contenido, código, diseño, marcas y materiales del Servicio son propiedad de AXENTYC
             o sus licenciantes. No se otorga ningún derecho de propiedad intelectual sobre el Servicio más
             allá de la licencia limitada de uso.
           </p>
@@ -113,7 +113,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-semibold text-foreground">8. Planes y Pagos</h2>
           <ul className="list-disc pl-5 space-y-1">
-            <li>CconeHub puede ofrecer planes gratuitos y de pago con diferentes niveles de funcionalidad.</li>
+            <li>AXENTYC puede ofrecer planes gratuitos y de pago con diferentes niveles de funcionalidad.</li>
             <li>Los precios y características de cada plan están disponibles en nuestra página de precios.</li>
             <li>Nos reservamos el derecho de modificar los precios con un aviso previo razonable.</li>
             <li>Los pagos no son reembolsables salvo que se indique lo contrario.</li>
@@ -148,7 +148,7 @@ export default function TermsPage() {
           </ul>
           <p>
             Puedes cancelar tu cuenta en cualquier momento desde la configuración de tu perfil o
-            contactándonos a <a href="mailto:soporte@cconehub.com" className="text-primary underline">soporte@cconehub.com</a>.
+            contactándonos a <a href="mailto:soporte@apexucode.com" className="text-primary underline">soporte@apexucode.com</a>.
           </p>
         </section>
 
@@ -167,7 +167,7 @@ export default function TermsPage() {
           <h2 className="text-lg font-semibold text-foreground">12. Ley Aplicable</h2>
           <p>
             Estos Términos se regirán e interpretarán de acuerdo con las leyes aplicables en la jurisdicción
-            donde opera CconeHub, sin dar efecto a ningún principio de conflicto de leyes.
+            donde opera AXENTYC, sin dar efecto a ningún principio de conflicto de leyes.
           </p>
         </section>
 
@@ -178,8 +178,8 @@ export default function TermsPage() {
             Si tienes preguntas sobre estos Términos y Condiciones, contáctanos en:
           </p>
           <ul className="list-none pl-0 space-y-1">
-            <li><strong>Email:</strong> <a href="mailto:soporte@cconehub.com" className="text-primary underline">soporte@cconehub.com</a></li>
-            <li><strong>Plataforma:</strong> <a href="https://cconehub.com" className="text-primary underline">cconehub.com</a></li>
+            <li><strong>Email:</strong> <a href="mailto:soporte@apexucode.com" className="text-primary underline">soporte@apexucode.com</a></li>
+            <li><strong>Plataforma:</strong> <a href="https://www.apexucode.com" className="text-primary underline">apexucode.com</a></li>
           </ul>
         </section>
       </div>

@@ -233,7 +233,7 @@ export default function IntegrationsPage() {
         setFbWebhookUrl(data.webhookUrl || '');
       } else {
         setFbConfigExists(false);
-        setFbConfigForm({ appId: '', appSecret: '', verifyToken: 'cconehub_fb_verify' });
+        setFbConfigForm({ appId: '', appSecret: '', verifyToken: 'axentyc_fb_verify' });
       }
     } catch {
       setFbConfigExists(false);
@@ -1110,7 +1110,7 @@ export default function IntegrationsPage() {
                               {config.showBranding && (
                                 <div className="text-center py-1 bg-gray-50 border-t border-gray-100">
                                   <p className="text-[8px] text-gray-400">
-                                    Powered by <strong>CconeHub</strong>
+                                    Powered by <strong>AXENTYC</strong>
                                   </p>
                                 </div>
                               )}
@@ -1227,7 +1227,7 @@ export default function IntegrationsPage() {
                                 Mostrar branding
                               </p>
                               <p className="text-xs text-default-400">
-                                &quot;Powered by CconeHub&quot;
+                                &quot;Powered by AXENTYC&quot;
                               </p>
                             </div>
                             <Switch
@@ -1538,7 +1538,7 @@ export default function IntegrationsPage() {
 
                   <Input
                     label="Verify Token (Webhook)"
-                    placeholder="cconehub_fb_verify"
+                    placeholder="axentyc_fb_verify"
                     value={fbConfigForm.verifyToken}
                     onValueChange={(v) => setFbConfigForm({ ...fbConfigForm, verifyToken: v })}
                     variant="bordered"

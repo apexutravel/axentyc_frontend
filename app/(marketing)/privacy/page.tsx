@@ -1,8 +1,8 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Política de Privacidad — CconeHub",
-  description: "Política de privacidad de la plataforma CconeHub.",
+  title: "Política de Privacidad — AXENTYC",
+  description: "Política de privacidad de la plataforma AXENTYC.",
 };
 
 export default function PrivacyPage() {
@@ -18,12 +18,12 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-semibold text-foreground">1. Introducción</h2>
           <p>
-            En <strong>CconeHub</strong> (&quot;nosotros&quot;, &quot;nuestro&quot;), nos tomamos muy en serio la privacidad de nuestros usuarios.
+            En <strong>AXENTYC</strong> (&quot;nosotros&quot;, &quot;nuestro&quot;), nos tomamos muy en serio la privacidad de nuestros usuarios.
             Esta Política de Privacidad describe cómo recopilamos, usamos, almacenamos y protegemos la información personal
             cuando utilizas nuestra plataforma de gestión de comunicaciones y CRM (el &quot;Servicio&quot;).
           </p>
           <p>
-            Al acceder o utilizar CconeHub, aceptas las prácticas descritas en esta política.
+            Al acceder o utilizar AXENTYC, aceptas las prácticas descritas en esta política.
             Si no estás de acuerdo, te pedimos que no utilices el Servicio.
           </p>
         </section>
@@ -119,7 +119,7 @@ export default function PrivacyPage() {
             <li>Solicitar la portabilidad de tus datos.</li>
           </ul>
           <p>
-            Para ejercer estos derechos, contáctanos a través de <a href="mailto:privacy@cconehub.com" className="text-primary underline">privacy@cconehub.com</a>.
+            Para ejercer estos derechos, contáctanos a través de <a href="mailto:privacy@apexucode.com" className="text-primary underline">privacy@apexucode.com</a>.
           </p>
         </section>
 
@@ -128,7 +128,7 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-semibold text-foreground">8. Eliminación de Datos de Usuario</h2>
           <p>
             Puedes solicitar la eliminación de todos tus datos en cualquier momento enviando un correo a{" "}
-            <a href="mailto:privacy@cconehub.com" className="text-primary underline">privacy@cconehub.com</a> con el asunto
+            <a href="mailto:privacy@apexucode.com" className="text-primary underline">privacy@apexucode.com</a> con el asunto
             &quot;Solicitud de eliminación de datos&quot;. Procesaremos tu solicitud en un plazo máximo de 30 días hábiles.
           </p>
           <p>
@@ -162,8 +162,8 @@ export default function PrivacyPage() {
             Si tienes preguntas sobre esta Política de Privacidad, puedes contactarnos en:
           </p>
           <ul className="list-none pl-0 space-y-1">
-            <li><strong>Email:</strong> <a href="mailto:privacy@cconehub.com" className="text-primary underline">privacy@cconehub.com</a></li>
-            <li><strong>Plataforma:</strong> <a href="https://cconehub.com" className="text-primary underline">cconehub.com</a></li>
+            <li><strong>Email:</strong> <a href="mailto:privacy@apexucode.com" className="text-primary underline">privacy@apexucode.com</a></li>
+            <li><strong>Plataforma:</strong> <a href="https://www.apexucode.com" className="text-primary underline">apexucode.com</a></li>
           </ul>
         </section>
       </div>
