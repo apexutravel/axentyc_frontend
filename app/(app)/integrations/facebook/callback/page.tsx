@@ -55,23 +55,28 @@ export default function FacebookCallbackPage() {
   const exchangeToken = async (code: string) => {
     try {
       const redirectUri = `${window.location.origin}/integrations/facebook/callback`;
+      console.log('[FB Callback] Exchanging code, redirectUri:', redirectUri);
+
       const res = await api.post<any>(API_ENDPOINTS.integrations.facebook.exchangeToken, {
         code,
         redirectUri,
       });
 
       const data = (res as any)?.data ?? res;
+      console.log('[FB Callback] Exchange response:', JSON.stringify(data));
 
       if (data.pages && data.pages.length > 0) {
         setPages(data.pages);
         setStatus("pages");
       } else {
         setStatus("error");
-        setError("No se encontraron páginas de Facebook. Asegúrate de tener al menos una página administrada.");
+        setError(`No se encontraron páginas. Respuesta del servidor: ${JSON.stringify(data)}`);
       }
     } catch (e: any) {
+      const detail = e?.response?.data || e?.message || 'Error desconocido';
+      console.error('[FB Callback] Exchange error:', detail);
       setStatus("error");
-      setError(e?.response?.data?.message || e?.message || "Error al intercambiar token con Facebook");
+      setError(typeof detail === 'object' ? JSON.stringify(detail) : detail);
     }
   };
 
