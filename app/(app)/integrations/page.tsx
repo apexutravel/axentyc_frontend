@@ -222,6 +222,29 @@ export default function IntegrationsPage() {
   const [fbConfigForm, setFbConfigForm] = useState({ appId: '', appSecret: '', verifyToken: '' });
   const [fbConfigSaving, setFbConfigSaving] = useState(false);
   const [fbWebhookUrl, setFbWebhookUrl] = useState('');
+  const [fbSecretVisible, setFbSecretVisible] = useState(false);
+  const [fbSecretLoading, setFbSecretLoading] = useState(false);
+
+  const toggleSecretVisibility = async () => {
+    if (fbSecretVisible) {
+      setFbSecretVisible(false);
+      setFbConfigForm((prev) => ({ ...prev, appSecret: '••••••••' }));
+      return;
+    }
+    setFbSecretLoading(true);
+    try {
+      const res = await api.get<any>(`${API_ENDPOINTS.integrations.facebook.config.replace('/config', '/debug-config')}`);
+      const data = (res as any)?.data ?? res;
+      if (data.secretFull) {
+        setFbConfigForm((prev) => ({ ...prev, appSecret: data.secretFull }));
+        setFbSecretVisible(true);
+      }
+    } catch {
+      toast.error('Error al obtener secret');
+    } finally {
+      setFbSecretLoading(false);
+    }
+  };
 
   const loadFacebookConfig = useCallback(async () => {
     try {
@@ -1532,12 +1555,30 @@ export default function IntegrationsPage() {
                   <Input
                     label="App Secret"
                     placeholder="abc123def456..."
-                    type="password"
+                    type={fbSecretVisible ? 'text' : 'password'}
                     value={fbConfigForm.appSecret}
-                    onValueChange={(v) => setFbConfigForm({ ...fbConfigForm, appSecret: v })}
+                    onValueChange={(v) => {
+                      setFbConfigForm({ ...fbConfigForm, appSecret: v });
+                      setFbSecretVisible(false);
+                    }}
                     variant="bordered"
                     size="sm"
                     isRequired
+                    endContent={
+                      fbConfigExists ? (
+                        <Button
+                          size="sm"
+                          isIconOnly
+                          variant="light"
+                          className="min-w-6 w-6 h-6"
+                          isLoading={fbSecretLoading}
+                          onPress={toggleSecretVisibility}
+                          title={fbSecretVisible ? 'Ocultar secret' : 'Ver secret guardado'}
+                        >
+                          {fbSecretVisible ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </Button>
+                      ) : null
+                    }
                   />
 
                   <Input
