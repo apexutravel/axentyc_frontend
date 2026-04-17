@@ -253,7 +253,11 @@ export default function IntegrationsPage() {
   const saveFacebookConfig = async () => {
     setFbConfigSaving(true);
     try {
-      await api.post(API_ENDPOINTS.integrations.facebook.config, fbConfigForm);
+      const payload: any = { appId: fbConfigForm.appId, verifyToken: fbConfigForm.verifyToken };
+      if (fbConfigForm.appSecret && !fbConfigForm.appSecret.includes('•')) {
+        payload.appSecret = fbConfigForm.appSecret;
+      }
+      await api.post(API_ENDPOINTS.integrations.facebook.config, payload);
       toast.success('Configuración de Facebook guardada');
       await loadFacebookConfig();
       setFbConfigDrawerOpen(false);
