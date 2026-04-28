@@ -319,7 +319,8 @@ export default function LiveChatPage() {
   const loadConversations = useCallback(async () => {
     try {
       const params = new URLSearchParams();
-      params.set("channel", "web_chat");
+      // Load both web_chat and facebook conversations
+      params.set("channels", "web_chat,facebook");
       if (statusFilter !== "all") params.set("status", statusFilter);
 
       const data = await api.get<Conversation[]>(
@@ -1249,8 +1250,13 @@ export default function LiveChatPage() {
                     {selectedConv.contactId?.name || "Visitor"}
                   </p>
                   <div className="flex items-center gap-2">
-                    <Chip color="primary" size="sm" variant="dot">
-                      web_chat
+                    <Chip 
+                      color={selectedConv.channel === 'facebook' ? 'primary' : 'default'} 
+                      size="sm" 
+                      variant="dot"
+                      startContent={<ChannelIcon channel={selectedConv.channel} />}
+                    >
+                      {selectedConv.channel === 'facebook' ? 'Facebook' : selectedConv.channel === 'instagram' ? 'Instagram' : 'Widget'}
                     </Chip>
                     <Chip
                       color={statusColors[selectedConv.status] || "default"}

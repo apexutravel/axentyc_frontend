@@ -3,6 +3,7 @@
 import { Input } from "@heroui/input";
 import { Avatar } from "@heroui/avatar";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
+import { Popover, PopoverTrigger, PopoverContent } from "@heroui/popover";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { Search, Bell, Wifi, WifiOff } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -80,8 +81,8 @@ export function TopNavbar() {
 
         <ThemeSwitch />
 
-        <Dropdown placement="bottom-end">
-          <DropdownTrigger>
+        <Popover placement="bottom-end">
+          <PopoverTrigger>
             <div className="relative">
               <button className="p-2 rounded-lg hover:bg-default-100 transition-colors">
                 <Bell className="text-default-500" size={20} />
@@ -92,20 +93,16 @@ export function TopNavbar() {
                 </span>
               )}
             </div>
-          </DropdownTrigger>
-          <DropdownMenu
-            aria-label="Centro de notificaciones"
-            className="max-w-[360px]"
-            disabledKeys={["empty"]}
-            variant="flat"
-          >
-            <DropdownItem key="actions" className="h-auto py-2">
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between gap-3">
+          </PopoverTrigger>
+          <PopoverContent className="w-[300px] p-0">
+            <div className="flex flex-col">
+              {/* Header */}
+              <div className="px-3 py-2.5 border-b border-divider">
+                <div className="flex items-center justify-between gap-2 mb-2">
                   <span className="text-sm font-semibold">Notificaciones</span>
                   <div className="flex items-center gap-2">
                     <button
-                      className="text-xs text-primary hover:underline disabled:text-default-400"
+                      className="text-[11px] text-primary hover:underline disabled:text-default-400"
                       disabled={unreadCount === 0}
                       onClick={(e) => {
                         e.preventDefault();
@@ -115,7 +112,7 @@ export function TopNavbar() {
                       Marcar leídas
                     </button>
                     <button
-                      className="text-xs text-default-500 hover:underline disabled:text-default-400"
+                      className="text-[11px] text-default-500 hover:underline disabled:text-default-400"
                       disabled={notifications.length === 0}
                       onClick={(e) => {
                         e.preventDefault();
@@ -145,43 +142,50 @@ export function TopNavbar() {
                   ))}
                 </div>
               </div>
-            </DropdownItem>
-            <DropdownItem key="empty" className={visibleNotifications.length === 0 ? "block" : "hidden"}>
-              <p className="text-sm text-default-500 py-2">No hay notificaciones nuevas</p>
-            </DropdownItem>
-            <DropdownItem key="list" className={visibleNotifications.length > 0 ? "block" : "hidden"}>
-              <div className="flex flex-col gap-2 py-1">
-                {visibleNotifications.map((notification) => (
-                  <a
-                    key={notification.id}
-                    className="flex items-start gap-2 rounded-md px-2 py-1.5 hover:bg-default-100"
-                    href={
-                      notification.type === "email"
-                        ? "/inbox"
-                        : notification.conversationId
-                          ? `/live-chat?conversationId=${notification.conversationId}`
-                          : "/live-chat"
-                    }
-                    onClick={() => markAsRead(notification.id)}
-                  >
-                    <span
-                      className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 ${
-                        notification.read ? "bg-default-300" : "bg-primary"
-                      }`}
-                    />
-                    <span className="min-w-0">
-                      <span className="block text-xs font-semibold truncate">{notification.title}</span>
-                      <span className="block text-xs text-default-600 truncate">{notification.message}</span>
-                      <span className="block text-[10px] text-default-400 mt-1">
-                        {formatRelativeTime(notification.createdAt)}
-                      </span>
-                    </span>
-                  </a>
-                ))}
+
+              {/* Notifications List */}
+              <div className="max-h-[380px] overflow-y-auto">
+                {visibleNotifications.length === 0 ? (
+                  <div className="py-8 px-3">
+                    <p className="text-sm text-default-500 text-center">No hay notificaciones nuevas</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-divider pb-2">
+                    {visibleNotifications.map((notification) => (
+                      <a
+                        key={notification.id}
+                        className={`flex items-start gap-2.5 px-3 py-2.5 w-full transition-colors hover:bg-default-100 ${
+                          !notification.read ? "bg-primary/5" : ""
+                        }`}
+                        href={
+                          notification.type === "email"
+                            ? "/inbox"
+                            : notification.conversationId
+                              ? `/live-chat?conversationId=${notification.conversationId}`
+                              : "/live-chat"
+                        }
+                        onClick={() => markAsRead(notification.id)}
+                      >
+                        <span
+                          className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 ${
+                            notification.read ? "bg-default-300" : "bg-primary"
+                          }`}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-foreground truncate">{notification.title}</p>
+                          <p className="text-xs text-default-600 truncate mt-0.5">{notification.message}</p>
+                          <p className="text-[10px] text-default-400 mt-1">
+                            {formatRelativeTime(notification.createdAt)}
+                          </p>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
-            </DropdownItem>
-          </DropdownMenu>
-        </Dropdown>
+            </div>
+          </PopoverContent>
+        </Popover>
 
         <Dropdown placement="bottom-end">
           <DropdownTrigger>

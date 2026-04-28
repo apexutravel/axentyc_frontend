@@ -203,9 +203,9 @@ export default function FacebookCallbackPage() {
               </Button>
               <Button
                 color="primary"
-                onPress={() => router.push("/conversations")}
+                onPress={() => router.push("/live-chat")}
               >
-                Ir a Conversaciones
+                Ir a Contact Center
               </Button>
             </div>
           </CardBody>

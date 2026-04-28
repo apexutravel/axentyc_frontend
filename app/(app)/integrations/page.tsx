@@ -200,6 +200,7 @@ export default function IntegrationsPage() {
   const [emailTesting, setEmailTesting] = useState(false);
   const [emailConnecting, setEmailConnecting] = useState(false);
   const [emailDisconnecting, setEmailDisconnecting] = useState(false);
+  const [emailDeleteConfirm, setEmailDeleteConfirm] = useState(false);
   const [emailTestFeedback, setEmailTestFeedback] = useState<null | { smtpOk: boolean; imapOk: boolean; details?: any }>(null);
   const [showSmtpPass, setShowSmtpPass] = useState(false);
   const [showImapPass, setShowImapPass] = useState(false);
@@ -217,47 +218,18 @@ export default function IntegrationsPage() {
   const [fbStatus, setFbStatus] = useState<FbStatus>({ connected: false, accounts: [] });
   const [fbConnecting, setFbConnecting] = useState(false);
   const [fbDisconnecting, setFbDisconnecting] = useState(false);
-  const [fbConfigDrawerOpen, setFbConfigDrawerOpen] = useState(false);
   const [fbConfigExists, setFbConfigExists] = useState(false);
-  const [fbConfigForm, setFbConfigForm] = useState({ appId: '', appSecret: '', verifyToken: '' });
-  const [fbConfigSaving, setFbConfigSaving] = useState(false);
   const [fbWebhookUrl, setFbWebhookUrl] = useState('');
-  const [fbSecretVisible, setFbSecretVisible] = useState(false);
-  const [fbSecretLoading, setFbSecretLoading] = useState(false);
-
-  const toggleSecretVisibility = async () => {
-    if (fbSecretVisible) {
-      setFbSecretVisible(false);
-      setFbConfigForm((prev) => ({ ...prev, appSecret: '••••••••' }));
-      return;
-    }
-    setFbSecretLoading(true);
-    try {
-      const res = await api.get<any>(`${API_ENDPOINTS.integrations.facebook.config.replace('/config', '/debug-config')}`);
-      const data = (res as any)?.data ?? res;
-      if (data.secretFull) {
-        setFbConfigForm((prev) => ({ ...prev, appSecret: data.secretFull }));
-        setFbSecretVisible(true);
-      }
-    } catch {
-      toast.error('Error al obtener secret');
-    } finally {
-      setFbSecretLoading(false);
-    }
-  };
+  const [fbConsentModalOpen, setFbConsentModalOpen] = useState(false);
+  const [fbDeleteConfirmId, setFbDeleteConfirmId] = useState<string | null>(null);
 
   const loadFacebookConfig = useCallback(async () => {
     try {
       const res = await api.get<any>(API_ENDPOINTS.integrations.facebook.config);
       const data = (res as any)?.data ?? res;
-      if (data.exists) {
-        setFbConfigExists(true);
-        setFbConfigForm({ appId: data.appId, appSecret: '••••••••', verifyToken: data.verifyToken });
-        setFbWebhookUrl(data.webhookUrl || '');
-      } else {
-        setFbConfigExists(false);
-        setFbConfigForm({ appId: '', appSecret: '', verifyToken: 'axentyc_fb_verify' });
-      }
+      // Facebook is now globally configured - just check if available
+      setFbConfigExists(data.available || false);
+      setFbWebhookUrl(data.webhookUrl || '');
     } catch {
       setFbConfigExists(false);
     }
@@ -273,30 +245,17 @@ export default function IntegrationsPage() {
     }
   }, []);
 
-  const saveFacebookConfig = async () => {
-    setFbConfigSaving(true);
-    try {
-      const payload: any = { appId: fbConfigForm.appId, verifyToken: fbConfigForm.verifyToken };
-      if (fbConfigForm.appSecret && !fbConfigForm.appSecret.includes('•')) {
-        payload.appSecret = fbConfigForm.appSecret;
-      }
-      await api.post(API_ENDPOINTS.integrations.facebook.config, payload);
-      toast.success('Configuración de Facebook guardada');
-      await loadFacebookConfig();
-      setFbConfigDrawerOpen(false);
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || 'Error al guardar configuración');
-    } finally {
-      setFbConfigSaving(false);
-    }
-  };
-
   const connectFacebook = async () => {
     if (!fbConfigExists) {
-      toast.error('Primero debes configurar tu App de Facebook');
-      setFbConfigDrawerOpen(true);
+      toast.error('La integración de Facebook no está disponible. Contacta al administrador.');
       return;
     }
+    // Show consent modal first
+    setFbConsentModalOpen(true);
+  };
+
+  const proceedWithFacebookOAuth = async () => {
+    setFbConsentModalOpen(false);
     setFbConnecting(true);
     try {
       const redirectUri = `${window.location.origin}/integrations/facebook/callback`;
@@ -319,11 +278,17 @@ export default function IntegrationsPage() {
   };
 
   const disconnectFacebook = async (accountId: string) => {
+    setFbDeleteConfirmId(accountId);
+  };
+
+  const confirmDisconnectFacebook = async () => {
+    if (!fbDeleteConfirmId) return;
     setFbDisconnecting(true);
     try {
-      await api.post(API_ENDPOINTS.integrations.facebook.disconnect(accountId), {});
+      await api.post(API_ENDPOINTS.integrations.facebook.disconnect(fbDeleteConfirmId), {});
       toast.success("Facebook Messenger desconectado");
       await loadFacebookStatus();
+      setFbDeleteConfirmId(null);
     } catch (e: any) {
       toast.error(e?.response?.data?.message || "Error al desconectar");
     } finally {
@@ -561,11 +526,31 @@ export default function IntegrationsPage() {
   };
 
   const disconnectEmail = async () => {
+    setEmailDeleteConfirm(true);
+  };
+
+  const confirmDisconnectEmail = async () => {
     setEmailDisconnecting(true);
     try {
       await api.post(API_ENDPOINTS.integrations.email.disconnect, {});
       toast.success("Integración de email desconectada");
+      // Reset email form to defaults
+      setEmailForm({
+        smtpHost: "",
+        smtpPort: 587,
+        smtpSecure: false,
+        smtpUser: "",
+        smtpPass: "",
+        fromName: "",
+        fromAddress: "",
+        imapHost: "",
+        imapPort: 993,
+        imapSecure: true,
+        imapUser: "",
+        imapPass: "",
+      });
       await loadEmailStatus();
+      setEmailDeleteConfirm(false);
     } catch (e: any) {
       toast.error(e?.response?.data?.message || "Error al desconectar");
     } finally {
@@ -774,19 +759,11 @@ export default function IntegrationsPage() {
               
               {!fbConfigExists && (
                 <div className="bg-warning/10 border border-warning/30 rounded-lg px-3 py-2">
-                  <p className="text-xs text-warning">⚠️ Configura tu App de Facebook primero</p>
+                  <p className="text-xs text-warning">⚠️ Integración no disponible. Contacta al administrador.</p>
                 </div>
               )}
 
               <div className="mt-auto flex gap-2">
-                <Button
-                  color="default"
-                  size="sm"
-                  variant="flat"
-                  onPress={() => setFbConfigDrawerOpen(true)}
-                >
-                  {fbConfigExists ? 'Configuración' : 'Configurar App'}
-                </Button>
                 <Button
                   color="primary"
                   size="sm"
@@ -830,6 +807,23 @@ export default function IntegrationsPage() {
                     </Chip>
                   </div>
                 </div>
+                {widgetExists && (
+                  <Switch
+                    size="sm"
+                    isSelected={config.enabled}
+                    onValueChange={async (checked) => {
+                      const previousState = config.enabled;
+                      setConfig({ ...config, enabled: checked });
+                      try {
+                        await api.post(API_ENDPOINTS.widget.save, { enabled: checked });
+                        toast.success(checked ? "Widget activado" : "Widget desactivado");
+                      } catch (e: any) {
+                        toast.error(e?.response?.data?.message || "Error al actualizar widget");
+                        setConfig({ ...config, enabled: previousState });
+                      }
+                    }}
+                  />
+                )}
               </div>
               <p className="text-xs text-default-400">
                 Inserta un chat en vivo en cualquier sitio web para interactuar
@@ -1514,168 +1508,6 @@ export default function IntegrationsPage() {
         </DrawerContent>
       </Drawer>
 
-      {/* ====================== FACEBOOK CONFIG DRAWER ====================== */}
-      <Drawer isOpen={fbConfigDrawerOpen} placement="right" size="lg" onOpenChange={setFbConfigDrawerOpen}>
-        <DrawerContent>
-          {(onClose) => (
-            <>
-              <DrawerHeader className="border-b border-divider">
-                <div>
-                  <h2 className="text-lg font-bold flex items-center gap-2">
-                    <Facebook size={20} className="text-blue-500" />
-                    Configurar Facebook App
-                  </h2>
-                  <p className="text-xs text-default-500 font-normal mt-1">
-                    Ingresa las credenciales de tu aplicación de Facebook
-                  </p>
-                </div>
-              </DrawerHeader>
-              <DrawerBody className="py-6">
-                <div className="space-y-4">
-                  <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                    <p className="text-xs text-blue-700 dark:text-blue-300">
-                      💡 <strong>¿Cómo obtener estas credenciales?</strong><br/>
-                      1. Ve a <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer" className="underline">Facebook Developers</a><br/>
-                      2. Crea una nueva app o selecciona una existente<br/>
-                      3. Ve a <strong>Configuración → Básica</strong><br/>
-                      4. Copia el <strong>App ID</strong> y <strong>App Secret</strong>
-                    </p>
-                  </div>
-
-                  <Input
-                    label="App ID"
-                    placeholder="123456789012345"
-                    value={fbConfigForm.appId}
-                    onValueChange={(v) => setFbConfigForm({ ...fbConfigForm, appId: v })}
-                    variant="bordered"
-                    size="sm"
-                    isRequired
-                  />
-
-                  <Input
-                    label="App Secret"
-                    placeholder="abc123def456..."
-                    type={fbSecretVisible ? 'text' : 'password'}
-                    value={fbConfigForm.appSecret}
-                    onValueChange={(v) => {
-                      setFbConfigForm({ ...fbConfigForm, appSecret: v });
-                      setFbSecretVisible(false);
-                    }}
-                    variant="bordered"
-                    size="sm"
-                    isRequired
-                    endContent={
-                      fbConfigExists ? (
-                        <Button
-                          size="sm"
-                          isIconOnly
-                          variant="light"
-                          className="min-w-6 w-6 h-6"
-                          isLoading={fbSecretLoading}
-                          onPress={toggleSecretVisibility}
-                          title={fbSecretVisible ? 'Ocultar secret' : 'Ver secret guardado'}
-                        >
-                          {fbSecretVisible ? <EyeOff size={14} /> : <Eye size={14} />}
-                        </Button>
-                      ) : null
-                    }
-                  />
-
-                  <Input
-                    label="Verify Token (Webhook)"
-                    placeholder="axentyc_fb_verify"
-                    value={fbConfigForm.verifyToken}
-                    onValueChange={(v) => setFbConfigForm({ ...fbConfigForm, verifyToken: v })}
-                    variant="bordered"
-                    size="sm"
-                    description="Token para verificar el webhook. Usa cualquier string seguro."
-                  />
-
-                  <Divider />
-
-                  <div className={`rounded-lg p-3 space-y-2.5 border ${fbConfigExists && fbWebhookUrl ? 'bg-success-50 dark:bg-success-950/30 border-success-200 dark:border-success-800' : 'bg-warning-50 dark:bg-warning-950/30 border-warning-200 dark:border-warning-800'}`}>
-                    <p className={`text-xs font-bold ${fbConfigExists && fbWebhookUrl ? 'text-success-700 dark:text-success-300' : 'text-warning-700 dark:text-warning-300'}`}>
-                      {fbConfigExists && fbWebhookUrl ? '✅' : '⚠️'} Datos para configurar el Webhook en Facebook Developers
-                    </p>
-
-                    {fbConfigExists && fbWebhookUrl ? (
-                      <div className="space-y-2">
-                        <div>
-                          <p className="text-[10px] text-success-600 dark:text-success-400 font-semibold mb-0.5">Webhook URL (Callback URL):</p>
-                          <div className="flex items-center gap-1">
-                            <code className="text-[11px] bg-success-100 dark:bg-success-900 px-2 py-1 rounded flex-1 break-all">
-                              {fbWebhookUrl}
-                            </code>
-                            <Button
-                              size="sm"
-                              isIconOnly
-                              variant="flat"
-                              className="min-w-6 w-6 h-6"
-                              onPress={() => {
-                                navigator.clipboard.writeText(fbWebhookUrl);
-                                toast.success('URL copiada');
-                              }}
-                            >
-                              <Copy size={12} />
-                            </Button>
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-success-600 dark:text-success-400 font-semibold mb-0.5">Verify Token:</p>
-                          <div className="flex items-center gap-1">
-                            <code className="text-[11px] bg-success-100 dark:bg-success-900 px-2 py-1 rounded flex-1">
-                              {fbConfigForm.verifyToken}
-                            </code>
-                            <Button
-                              size="sm"
-                              isIconOnly
-                              variant="flat"
-                              className="min-w-6 w-6 h-6"
-                              onPress={() => {
-                                navigator.clipboard.writeText(fbConfigForm.verifyToken);
-                                toast.success('Token copiado');
-                              }}
-                            >
-                              <Copy size={12} />
-                            </Button>
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-success-600 dark:text-success-400 font-semibold mb-0.5">Campos (Webhook Fields):</p>
-                          <div className="flex flex-wrap gap-1 mt-0.5">
-                            {['messages', 'messaging_postbacks', 'message_reads', 'message_deliveries'].map((f) => (
-                              <Chip key={f} size="sm" variant="flat" color="success" className="text-[10px] h-5">
-                                {f}
-                              </Chip>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-warning-600 dark:text-warning-400">
-                        Guarda la configuración primero. Después aparecerán aquí la <strong>URL</strong> y el <strong>Verify Token</strong> listos para copiar y pegar en Facebook Developers.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </DrawerBody>
-              <DrawerFooter className="border-t border-divider">
-                <Button variant="light" onPress={onClose}>Cancelar</Button>
-                <Button 
-                  color="primary" 
-                  isLoading={fbConfigSaving}
-                  isDisabled={!fbConfigForm.appId || !fbConfigForm.appSecret}
-                  startContent={<Save size={14} />} 
-                  onPress={saveFacebookConfig}
-                >
-                  Guardar Configuración
-                </Button>
-              </DrawerFooter>
-            </>
-          )}
-        </DrawerContent>
-      </Drawer>
-
       {/* ====================== FACEBOOK GUIDE MODAL ====================== */}
       <Modal
         isOpen={fbGuide.isOpen}
@@ -2148,19 +1980,146 @@ export default function IntegrationsPage() {
                 </Accordion>
               </ModalBody>
               <ModalFooter className="border-t border-divider">
-                <Button
-                  size="sm"
-                  variant="flat"
-                  onPress={() => {
-                    onClose();
-                    setFbConfigDrawerOpen(true);
-                  }}
-                  startContent={<Settings size={14} />}
-                >
-                  Ir a Configurar App
-                </Button>
                 <Button color="primary" size="sm" onPress={onClose}>
                   Entendido
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      {/* ====================== FACEBOOK CONSENT MODAL ====================== */}
+      <Modal isOpen={fbConsentModalOpen} onOpenChange={setFbConsentModalOpen} size="md">
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="border-b border-divider">
+                <div className="flex items-center gap-2">
+                  <Facebook size={20} className="text-blue-500" />
+                  <span>Conectar con Facebook</span>
+                </div>
+              </ModalHeader>
+              <ModalBody className="py-6">
+                <div className="space-y-4">
+                  <p className="text-sm text-default-700">
+                    Al continuar, serás redirigido a Facebook para autorizar el acceso de <strong>AXENTYC</strong> a tu cuenta.
+                  </p>
+                  
+                  <div className="bg-default-100 rounded-lg p-4 space-y-2">
+                    <p className="text-xs font-semibold text-default-700">Permisos solicitados:</p>
+                    <ul className="text-xs text-default-600 space-y-1.5 ml-4">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 size={14} className="text-success mt-0.5 flex-shrink-0" />
+                        <span>Acceso a tus páginas de Facebook administradas</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 size={14} className="text-success mt-0.5 flex-shrink-0" />
+                        <span>Leer y responder mensajes de Messenger</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 size={14} className="text-success mt-0.5 flex-shrink-0" />
+                        <span>Gestionar metadatos de las páginas</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      <strong>Privacidad:</strong> AXENTYC solo accederá a los datos necesarios para gestionar conversaciones. 
+                      No compartiremos tu información con terceros. Puedes revocar el acceso en cualquier momento desde tu configuración de Facebook.
+                    </p>
+                  </div>
+
+                  <p className="text-xs text-default-500">
+                    Al hacer clic en "Continuar", aceptas que AXENTYC acceda a tu cuenta de Facebook según los permisos descritos.
+                  </p>
+                </div>
+              </ModalBody>
+              <ModalFooter className="border-t border-divider">
+                <Button variant="light" onPress={onClose}>
+                  Cancelar
+                </Button>
+                <Button 
+                  color="primary" 
+                  onPress={proceedWithFacebookOAuth}
+                  startContent={<Facebook size={16} />}
+                >
+                  Continuar con Facebook
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      {/* ====================== FACEBOOK DELETE CONFIRMATION ====================== */}
+      <Modal isOpen={!!fbDeleteConfirmId} onOpenChange={(open) => !open && setFbDeleteConfirmId(null)} size="sm">
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="border-b border-divider">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle size={20} className="text-warning" />
+                  <span>Confirmar desconexión</span>
+                </div>
+              </ModalHeader>
+              <ModalBody className="py-6">
+                <p className="text-sm text-default-700">
+                  ¿Estás seguro de que deseas desconectar esta página de Facebook?
+                </p>
+                <p className="text-xs text-default-500 mt-2">
+                  Dejarás de recibir mensajes de esta página en AXENTYC. Las conversaciones existentes se mantendrán, pero no podrás responder desde aquí.
+                </p>
+              </ModalBody>
+              <ModalFooter className="border-t border-divider">
+                <Button variant="light" onPress={onClose}>
+                  Cancelar
+                </Button>
+                <Button 
+                  color="danger" 
+                  isLoading={fbDisconnecting}
+                  onPress={confirmDisconnectFacebook}
+                  startContent={<Trash2 size={16} />}
+                >
+                  Desconectar
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      {/* ====================== EMAIL DELETE CONFIRMATION ====================== */}
+      <Modal isOpen={emailDeleteConfirm} onOpenChange={setEmailDeleteConfirm} size="sm">
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="border-b border-divider">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle size={20} className="text-warning" />
+                  <span>Confirmar desconexión</span>
+                </div>
+              </ModalHeader>
+              <ModalBody className="py-6">
+                <p className="text-sm text-default-700">
+                  ¿Estás seguro de que deseas desconectar la integración de email?
+                </p>
+                <p className="text-xs text-default-500 mt-2">
+                  Dejarás de recibir y enviar emails desde AXENTYC. Tendrás que volver a configurar SMTP e IMAP si deseas reconectar.
+                </p>
+              </ModalBody>
+              <ModalFooter className="border-t border-divider">
+                <Button variant="light" onPress={onClose}>
+                  Cancelar
+                </Button>
+                <Button 
+                  color="danger" 
+                  isLoading={emailDisconnecting}
+                  onPress={confirmDisconnectEmail}
+                  startContent={<Trash2 size={16} />}
+                >
+                  Desconectar
                 </Button>
               </ModalFooter>
             </>
