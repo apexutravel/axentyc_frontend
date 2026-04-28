@@ -319,8 +319,8 @@ export default function LiveChatPage() {
   const loadConversations = useCallback(async () => {
     try {
       const params = new URLSearchParams();
-      // Load both web_chat and facebook conversations
-      params.set("channels", "web_chat,facebook");
+      // Load web_chat, facebook, and instagram conversations
+      params.set("channels", "web_chat,facebook,instagram");
       if (statusFilter !== "all") params.set("status", statusFilter);
 
       const data = await api.get<Conversation[]>(
