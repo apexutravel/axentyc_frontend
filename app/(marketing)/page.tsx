@@ -240,28 +240,28 @@ export default function HomePage() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 mb-8">
-                <Button
-                  as={NextLink}
-                  color="primary"
-                  size="lg"
-                  radius="lg"
-                  href="/auth/register"
-                  endContent={<ArrowRight size={18} />}
-                  className="font-bold shadow-lg shadow-primary/25 px-8"
-                >
-                  Comenzar Gratis
-                </Button>
-                <Button
-                  as={NextLink}
-                  href="/#producto"
-                  size="lg"
-                  radius="lg"
-                  variant="bordered"
-                  startContent={<Play size={16} />}
-                  className="font-semibold"
-                >
-                  Ver cómo funciona
-                </Button>
+                <NextLink href="/auth/register">
+                  <Button
+                    color="primary"
+                    size="lg"
+                    radius="lg"
+                    endContent={<ArrowRight size={18} />}
+                    className="font-bold shadow-lg shadow-primary/25 px-8"
+                  >
+                    Comenzar Gratis
+                  </Button>
+                </NextLink>
+                <NextLink href="/#producto">
+                  <Button
+                    size="lg"
+                    radius="lg"
+                    variant="bordered"
+                    startContent={<Play size={16} />}
+                    className="font-semibold"
+                  >
+                    Ver cómo funciona
+                  </Button>
+                </NextLink>
               </div>
 
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-default-400">
@@ -1259,27 +1259,27 @@ export default function HomePage() {
                 automatizan su operación y cierran más deals con AXENTYC.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 mb-8">
-                <Button
-                  as={NextLink}
-                  color="primary"
-                  size="lg"
-                  radius="lg"
-                  href="/auth/register"
-                  endContent={<ArrowRight size={18} />}
-                  className="font-bold shadow-lg shadow-primary/25 px-8"
-                >
-                  Comenzar Gratis
-                </Button>
-                <Button
-                  as={NextLink}
-                  href="/pricing"
-                  size="lg"
-                  radius="lg"
-                  variant="bordered"
-                  className="font-semibold"
-                >
-                  Ver Planes
-                </Button>
+                <NextLink href="/auth/register">
+                  <Button
+                    color="primary"
+                    size="lg"
+                    radius="lg"
+                    endContent={<ArrowRight size={18} />}
+                    className="font-bold shadow-lg shadow-primary/25 px-8"
+                  >
+                    Comenzar Gratis
+                  </Button>
+                </NextLink>
+                <NextLink href="/pricing">
+                  <Button
+                    size="lg"
+                    radius="lg"
+                    variant="bordered"
+                    className="font-semibold"
+                  >
+                    Ver Planes
+                  </Button>
+                </NextLink>
               </div>
               <div className="space-y-3 text-sm text-default-400">
                 <div className="flex items-center gap-2"><CheckCircle2 size={15} className="text-success" /> Sin tarjeta de crédito</div>

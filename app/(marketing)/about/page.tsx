@@ -282,17 +282,17 @@ export default function AboutPage() {
               Conoce nuestros planes o escríbenos directamente. Estamos aquí para ayudarte.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button
-                as={NextLink}
-                className="font-bold shadow-xl shadow-primary/20"
-                color="primary"
-                endContent={<ArrowRight size={18} />}
-                href="/pricing"
-                radius="full"
-                size="lg"
-              >
-                Ver Planes
-              </Button>
+              <NextLink href="/pricing">
+                <Button
+                  className="font-bold shadow-xl shadow-primary/20"
+                  color="primary"
+                  endContent={<ArrowRight size={18} />}
+                  radius="full"
+                  size="lg"
+                >
+                  Ver Planes
+                </Button>
+              </NextLink>
               <Button
                 as="a"
                 href="mailto:contacto@apexucode.com"

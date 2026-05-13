@@ -236,22 +236,24 @@ export default function PricingPage() {
                     </div>
 
                     {/* CTA */}
-                    <Button
-                      as={NextLink}
-                      className={`w-full mb-8 font-bold ${plan.popular ? "shadow-xl shadow-primary/30" : ""}`}
-                      color={plan.popular ? "primary" : "default"}
-                      endContent={<ArrowRight size={18} />}
+                    <NextLink
                       href={
                         plan.name === "Enterprise"
                           ? "/about"
                           : `/auth/register?plan=${plan.name.toLowerCase()}&billing=${billing}`
                       }
-                      radius="lg"
-                      size="lg"
-                      variant={plan.popular ? "solid" : "bordered"}
                     >
-                      {plan.cta}
-                    </Button>
+                      <Button
+                        className={`w-full mb-8 font-bold ${plan.popular ? "shadow-xl shadow-primary/30" : ""}`}
+                        color={plan.popular ? "primary" : "default"}
+                        endContent={<ArrowRight size={18} />}
+                        radius="lg"
+                        size="lg"
+                        variant={plan.popular ? "solid" : "bordered"}
+                      >
+                        {plan.cta}
+                      </Button>
+                    </NextLink>
 
                     {/* Features */}
                     <div className="space-y-3">
