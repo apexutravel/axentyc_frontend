@@ -8,7 +8,7 @@ import { Spinner } from "@heroui/spinner";
 import { Chip } from "@heroui/chip";
 import { Avatar } from "@heroui/avatar";
 import { addToast } from "@heroui/toast";
-import { CheckCircle2, XCircle, Facebook, Users, ArrowLeft, ExternalLink } from "lucide-react";
+import { CheckCircle2, XCircle, Facebook, Users, ArrowLeft, ExternalLink, Instagram } from "lucide-react";
 import { api } from "@/lib/api";
 import { API_ENDPOINTS } from "@/config/api";
 
@@ -18,6 +18,13 @@ interface FacebookPage {
   picture?: string;
   category?: string;
   fanCount?: number;
+  instagramAccount?: {
+    id: string;
+    username: string;
+    name: string;
+    profilePicture?: string;
+    followersCount?: number;
+  };
 }
 
 export default function FacebookCallbackPage() {
@@ -146,7 +153,7 @@ export default function FacebookCallbackPage() {
                   ) : (
                     <Avatar name={page.name} size="md" radius="lg" color="primary" />
                   )}
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold">{page.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       {page.category && (
@@ -154,10 +161,19 @@ export default function FacebookCallbackPage() {
                       )}
                       {page.fanCount != null && (
                         <span className="text-xs text-default-400 flex items-center gap-1">
-                          <Users size={10} /> {page.fanCount.toLocaleString()} seguidores
+                          <Users size={10} /> {page.fanCount.toLocaleString()}
                         </span>
                       )}
                     </div>
+                    {page.instagramAccount && (
+                      <div className="flex items-center gap-1.5 mt-1.5 text-xs text-default-500">
+                        <Instagram size={12} className="text-pink-500" />
+                        <span className="font-medium">@{page.instagramAccount.username}</span>
+                        {page.instagramAccount.followersCount != null && (
+                          <span className="text-default-400">• {page.instagramAccount.followersCount.toLocaleString()} seguidores</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <Button
@@ -195,8 +211,9 @@ export default function FacebookCallbackPage() {
             <div className="text-center">
               <h2 className="text-lg font-bold text-success">¡Conexión Exitosa!</h2>
               <p className="text-sm text-default-500 mt-1">
-                Tu página de Facebook Messenger ha sido conectada. Los mensajes entrantes aparecerán
-                automáticamente en tu bandeja de conversaciones.
+                Tu página de Facebook ha sido conectada. Los mensajes de Messenger{" "}
+                {pages.find(p => p.id === connectingPageId)?.instagramAccount && "e Instagram DMs "}
+                aparecerán automáticamente en tu Contact Center.
               </p>
             </div>
             <div className="flex gap-2 mt-2">

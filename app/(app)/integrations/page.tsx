@@ -52,6 +52,7 @@ import {
   Settings,
   CheckCircle2,
   AlertTriangle,
+  Instagram,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { API_ENDPOINTS } from "@/config/api";
@@ -210,8 +211,16 @@ export default function IntegrationsPage() {
     _id: string;
     accountName: string;
     pageId?: string;
+    accountId?: string;
+    platform: 'facebook' | 'instagram';
     status: string;
-    metadata?: { picture?: string; category?: string };
+    metadata?: { 
+      picture?: string; 
+      category?: string;
+      linkedPageId?: string;
+      profilePicture?: string;
+      followersCount?: number;
+    };
   };
   type FbStatus = { connected: boolean; accounts: FbAccount[] };
 
@@ -732,17 +741,31 @@ export default function IntegrationsPage() {
                   {fbStatus.accounts.filter(a => a.status === 'connected').map((acc) => (
                     <div key={acc._id} className="flex items-center justify-between bg-default-50 dark:bg-default-100/50 rounded-lg px-2.5 py-1.5">
                       <div className="flex items-center gap-2 min-w-0">
-                        {acc.metadata?.picture ? (
-                          <img src={acc.metadata.picture} alt="" className="w-5 h-5 rounded-full" />
-                        ) : null}
-                        <span className="text-xs font-medium truncate">{acc.accountName}</span>
+                        {acc.platform === 'instagram' ? (
+                          <Instagram size={14} className="text-pink-500 flex-shrink-0" />
+                        ) : (
+                          <Facebook size={14} className="text-blue-500 flex-shrink-0" />
+                        )}
+                        {(acc.metadata?.picture || acc.metadata?.profilePicture) && (
+                          <img 
+                            src={acc.metadata.picture || acc.metadata.profilePicture} 
+                            alt="" 
+                            className="w-5 h-5 rounded-full flex-shrink-0" 
+                          />
+                        )}
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-medium truncate">{acc.accountName}</span>
+                          {acc.platform === 'instagram' && acc.metadata?.followersCount != null && (
+                            <span className="text-[10px] text-default-400">{acc.metadata.followersCount.toLocaleString()} seguidores</span>
+                          )}
+                        </div>
                       </div>
                       <Button
                         size="sm"
                         variant="light"
                         color="danger"
                         isIconOnly
-                        className="min-w-6 w-6 h-6"
+                        className="min-w-6 w-6 h-6 flex-shrink-0"
                         isLoading={fbDisconnecting}
                         onPress={() => disconnectFacebook(acc._id)}
                       >
@@ -754,7 +777,7 @@ export default function IntegrationsPage() {
               )}
 
               <p className="text-xs text-default-400">
-                Recibe y responde mensajes de Facebook Messenger directamente desde tu CRM.
+                Recibe y responde mensajes de Facebook Messenger{fbStatus.accounts.some(a => a.platform === 'instagram' && a.status === 'connected') ? ' e Instagram DMs' : ''} directamente desde tu CRM.
               </p>
               
               {!fbConfigExists && (
