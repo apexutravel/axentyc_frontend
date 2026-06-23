@@ -8,14 +8,13 @@ import { Spinner } from "@heroui/spinner";
 import { Chip } from "@heroui/chip";
 import { Avatar } from "@heroui/avatar";
 import { addToast } from "@heroui/toast";
-import { CheckCircle2, XCircle, Facebook, Users, ArrowLeft } from "lucide-react";
+import { CheckCircle2, XCircle, Facebook, Users, ArrowLeft, ExternalLink } from "lucide-react";
 import { api } from "@/lib/api";
 import { API_ENDPOINTS } from "@/config/api";
 
 interface FacebookPage {
   id: string;
   name: string;
-  accessToken: string;
   picture?: string;
   category?: string;
   fanCount?: number;
@@ -28,6 +27,7 @@ export default function FacebookCallbackPage() {
   const [pages, setPages] = useState<FacebookPage[]>([]);
   const [error, setError] = useState("");
   const [connectingPageId, setConnectingPageId] = useState<string | null>(null);
+  const [selectionToken, setSelectionToken] = useState("");
   const processedRef = useRef(false);
 
   useEffect(() => {
@@ -65,12 +65,21 @@ export default function FacebookCallbackPage() {
       const data = (res as any)?.data ?? res;
       console.log('[FB Callback] Exchange response:', JSON.stringify(data));
 
-      if (data.pages && data.pages.length > 0) {
+      if (data.pages && data.pages.length > 0 && data.selectionToken) {
+        setSelectionToken(data.selectionToken);
         setPages(data.pages);
         setStatus("pages");
       } else {
         setStatus("error");
-        setError(`No se encontraron páginas. Respuesta del servidor: ${JSON.stringify(data)}`);
+        setError(
+          "Facebook no entregó páginas conectables para esta autorización.\n\n" +
+          "Si viste tus páginas y seleccionaste una, normalmente significa que esa página no otorgó todos los accesos necesarios o tu usuario no tiene permisos suficientes sobre esa página.\n\n" +
+          "Qué hacer:\n" +
+          "• En Facebook, selecciona nuevamente la página y acepta todos los permisos\n" +
+          "• Verifica que tu usuario tenga control completo/admin de esa página\n" +
+          "• Si otra página sí conecta, revisa los accesos específicos de las páginas que fallan\n" +
+          "• Si el problema continúa, contacta soporte para revisar la autorización de esa página"
+        );
       }
     } catch (e: any) {
       const detail = e?.response?.data || e?.message || 'Error desconocido';
@@ -86,10 +95,7 @@ export default function FacebookCallbackPage() {
     try {
       await api.post(API_ENDPOINTS.integrations.facebook.connectPage, {
         pageId: page.id,
-        pageName: page.name,
-        pageAccessToken: page.accessToken,
-        picture: page.picture,
-        category: page.category,
+        selectionToken,
       });
 
       setStatus("success");
@@ -221,15 +227,33 @@ export default function FacebookCallbackPage() {
             </div>
             <div className="text-center">
               <h2 className="text-lg font-bold text-danger">Error de Conexión</h2>
-              <p className="text-sm text-default-500 mt-1 max-w-md">{error}</p>
+              <p className="text-sm text-default-500 mt-1 max-w-md whitespace-pre-line text-left">{error}</p>
             </div>
-            <Button
-              variant="flat"
-              startContent={<ArrowLeft size={14} />}
-              onPress={() => router.push("/integrations")}
-            >
-              Volver a Integraciones
-            </Button>
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <Button
+                  variant="flat"
+                  startContent={<ArrowLeft size={14} />}
+                  onPress={() => router.push("/integrations")}
+                >
+                  Volver a Integraciones
+                </Button>
+                <Button
+                  color="primary"
+                  onPress={() => router.push("/integrations/facebook")}
+                >
+                  Reintentar Conexión
+                </Button>
+              </div>
+              <Button
+                size="sm"
+                variant="light"
+                startContent={<ExternalLink size={14} />}
+                onPress={() => window.open("https://developers.facebook.com/apps", "_blank")}
+              >
+                Abrir Facebook Developers
+              </Button>
+            </div>
           </CardBody>
         </Card>
       )}
