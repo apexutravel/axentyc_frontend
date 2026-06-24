@@ -85,6 +85,9 @@ interface Conversation {
   metadata?: {
     widgetId?: string;
     visitorId?: string;
+    pageName?: string;  // Facebook/Instagram page name
+    pageId?: string;
+    accountId?: string;
   };
   createdAt: string;
 }
@@ -1176,11 +1179,18 @@ export default function LiveChatPage() {
                       {conv.lastMessageAt ? formatTime(conv.lastMessageAt) : ""}
                     </span>
                   </div>
-                  {conv.subject && !conv.subject.startsWith("Chat Widget") && (
+                  {(conv.subject && !conv.subject.startsWith("Chat Widget")) || conv.metadata?.pageName ? (
                     <div className="flex items-center gap-1 mt-0.5 min-w-0">
-                      <p className="text-xs text-primary-500 font-medium truncate">
-                        {conv.subject}
-                      </p>
+                      {conv.subject && !conv.subject.startsWith("Chat Widget") && (
+                        <p className="text-xs text-primary-500 font-medium truncate">
+                          {conv.subject}
+                        </p>
+                      )}
+                      {conv.metadata?.pageName && (
+                        <span className="text-[10px] text-default-400 truncate">
+                          [{conv.metadata.pageName}]
+                        </span>
+                      )}
                       {conv.tags && conv.tags.length > 0 && (
                         <div className="flex gap-0.5 flex-shrink-0">
                           {conv.tags.slice(0, 2).map((tag) => (
@@ -1191,7 +1201,7 @@ export default function LiveChatPage() {
                         </div>
                       )}
                     </div>
-                  )}
+                  ) : null}
                   <div className="flex items-center justify-between mt-0.5">
                     <p className="text-xs text-default-400 truncate flex-1 mr-1">
                       {conv.lastMessage || "Sin mensajes"}
