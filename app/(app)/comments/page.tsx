@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { MessageSquare, RefreshCw, Image as ImageIcon, User, Calendar, ExternalLink, Plus, TrendingUp } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
+import { api } from '@/lib/api';
 
 interface Comment {
   id: string;
@@ -37,7 +37,6 @@ interface FacebookPage {
 }
 
 export default function CommentsPage() {
-  const { user } = useAuth();
   const [pages, setPages] = useState<FacebookPage[]>([]);
   const [selectedPage, setSelectedPage] = useState<string>('');
   const [posts, setPosts] = useState<Post[]>([]);
@@ -57,12 +56,7 @@ export default function CommentsPage() {
 
   const fetchPages = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/integrations/facebook/status`, {
-        headers: {
-          Authorization: `Bearer ${user?.token}`,
-        },
-      });
-      const data = await res.json();
+      const data = await api.get(`${process.env.NEXT_PUBLIC_API_URL}/integrations/facebook/status`);
       if (data.data?.accounts) {
         const fbPages = data.data.accounts.filter((acc: any) => acc.platform === 'facebook' && acc.status === 'connected');
         setPages(fbPages);
@@ -81,15 +75,9 @@ export default function CommentsPage() {
     
     setLoading(true);
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/integrations/facebook/feed?pageId=${selectedPage}&limit=20`,
-        {
-          headers: {
-            Authorization: `Bearer ${user?.token}`,
-          },
-        }
+      const data = await api.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/integrations/facebook/feed?pageId=${selectedPage}&limit=20`
       );
-      const data = await res.json();
       if (data.data?.posts) {
         setPosts(data.data.posts);
         if (data.data.posts.length > 0 && !selectedPost) {
@@ -109,18 +97,10 @@ export default function CommentsPage() {
     
     setSyncing(true);
     try {
-      const res = await fetch(
+      const data = await api.post(
         `${process.env.NEXT_PUBLIC_API_URL}/integrations/facebook/sync-comments`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${user?.token}`,
-          },
-          body: JSON.stringify({ pageId: selectedPage }),
-        }
+        { pageId: selectedPage }
       );
-      const data = await res.json();
       if (data.data?.success) {
         const added = data.data.results[0]?.commentsAdded || 0;
         toast.success(`${added} comentarios sincronizados`);
