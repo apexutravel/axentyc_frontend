@@ -68,6 +68,11 @@ export const siteConfig = {
       icon: "MessageSquare",
     },
     {
+      label: "Comentarios",
+      href: "/comments",
+      icon: "MessageSquare",
+    },
+    {
       label: "Contacts",
       href: "/contacts",
       icon: "Users",
