@@ -339,6 +339,7 @@ export function NotificationCenterProvider({ children }: { children: React.React
       console.log("[Notification] message.received event:", JSON.stringify(data, null, 2));
       const conversationId = data?.conversationId || data?.message?.conversationId;
       const message = data?.message || data;
+      if (message?.metadata?.isComment) return;
       
       // Use contact name if available, otherwise use senderName from message
       const contactName = data?.contactId?.name || data?.contact?.name;
@@ -367,6 +368,7 @@ export function NotificationCenterProvider({ children }: { children: React.React
 
     const handleConversationCreated = (data: any) => {
       console.log("[Notification] conversation.created event:", JSON.stringify(data, null, 2));
+      if (data?.metadata?.isComment) return;
       const conversationId = data?._id || data?.conversationId;
       const contactName = data?.contactId?.name || "Visitante";
       

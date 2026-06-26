@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MessageSquare, RefreshCw, Image as ImageIcon, User, Calendar, ExternalLink, Plus, TrendingUp } from 'lucide-react';
+import { MessageSquare, RefreshCw, ThumbsUp, Send, Smile, EyeOff, MoreHorizontal, Calendar, ExternalLink, User, Reply, Plus, TrendingUp, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 
@@ -43,6 +43,10 @@ export default function CommentsPage() {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyTexts, setReplyTexts] = useState<Record<string, string>>({});
+  const [sendingReply, setSendingReply] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState<string>('');
 
   useEffect(() => {
     fetchPages();
@@ -111,6 +115,34 @@ export default function CommentsPage() {
       toast.error('Error al sincronizar comentarios');
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const replyToComment = async (commentId: string) => {
+    const text = replyTexts[commentId];
+    if (!text?.trim()) {
+      toast.error('Escribe un mensaje para responder');
+      return;
+    }
+
+    setSendingReply(commentId);
+    try {
+      const data = await api.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/integrations/facebook/reply-comment`,
+        { commentId, message: text }
+      );
+      
+      if (data.success) {
+        toast.success('Respuesta publicada');
+        setReplyTexts(prev => ({ ...prev, [commentId]: '' }));
+        setReplyingTo(null);
+        await fetchPosts();
+      }
+    } catch (error: any) {
+      console.error('Error replying to comment:', error);
+      toast.error(error.message || 'Error al enviar respuesta');
+    } finally {
+      setSendingReply(null);
     }
   };
 
@@ -289,7 +321,17 @@ export default function CommentsPage() {
                         </div>
                         
                         {/* Action Buttons */}
-                        <div className="flex gap-2 ml-13">
+                        <div className="flex gap-2 ml-13 mb-3">
+                          <button
+                            onClick={() => {
+                              setReplyingTo(replyingTo === comment.id ? null : comment.id);
+                              setReplyText('');
+                            }}
+                            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+                          >
+                            <Reply className="w-3 h-3" />
+                            Responder
+                          </button>
                           <button
                             onClick={() => createLead(comment)}
                             className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 rounded-md hover:bg-green-100 transition-colors"
@@ -305,6 +347,36 @@ export default function CommentsPage() {
                             Crear Deal
                           </button>
                         </div>
+
+                        {/* Reply Input */}
+                        {replyingTo === comment.id && (
+                          <div className="ml-13 mt-3 pt-3 border-t border-gray-200">
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={replyText}
+                                onChange={(e) => setReplyText(e.target.value)}
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    replyToComment(comment.id);
+                                  }
+                                }}
+                                placeholder="Escribe tu respuesta..."
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                autoFocus
+                              />
+                              <button
+                                onClick={() => replyToComment(comment.id)}
+                                disabled={!replyText.trim()}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                              >
+                                <Send className="w-4 h-4" />
+                                Enviar
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

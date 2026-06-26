@@ -59,18 +59,8 @@ export const siteConfig = {
     },
     {
       label: "Contact Center",
-      href: "/live-chat",
+      href: "/contact-center",
       icon: "MessagesSquare",
-    },
-    {
-      label: "Inbox",
-      href: "/inbox",
-      icon: "MessageSquare",
-    },
-    {
-      label: "Comentarios",
-      href: "/comments",
-      icon: "MessageSquare",
     },
     {
       label: "Contacts",
