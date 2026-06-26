@@ -145,9 +145,12 @@ interface Comment {
 interface Post {
   id: string;
   message?: string;
+  story?: string;
+  status_type?: string;
   full_picture?: string;
   created_time: string;
   from?: { id: string; name: string; picture?: { data?: { url?: string } } };
+  admin_creator?: { id: string; name: string; picture?: { data?: { url?: string } } };
   reactions?: { summary?: { total_count?: number } };
   likes?: { summary?: { total_count?: number } };
   comments?: { data: Comment[] };
@@ -156,6 +159,7 @@ interface Post {
 interface FacebookPage {
   pageId: string;
   accountName: string;
+  avatarUrl?: string;
 }
 
 const statusColors: Record<string, "success" | "warning" | "default" | "danger" | "primary" | "secondary"> = {
@@ -281,6 +285,8 @@ export default function ContactCenterPage() {
   const [dmRecipient, setDmRecipient] = useState<{ id: string; name: string } | null>(null);
   const [dmText, setDmText] = useState('');
   const [sendingDm, setSendingDm] = useState(false);
+  const [fbReactionsEnabled, setFbReactionsEnabled] = useState(true);
+  const [visibleComments, setVisibleComments] = useState(5);
   
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
@@ -1067,6 +1073,59 @@ export default function ContactCenterPage() {
       }
     };
 
+    // ─── Facebook Comments Real-Time ───
+    const handleFbCommentNew = (data: any) => {
+      if (data?.pageId && data.pageId !== selectedFbPage) return;
+      const newComment = data?.comment as Comment;
+      if (!newComment || !data?.postId) return;
+
+      setFbPosts((prev) => {
+        const postIdx = prev.findIndex(p => p.id === data.postId);
+        if (postIdx === -1) return prev;
+        const updated = [...prev];
+        const post = { ...updated[postIdx] };
+        const existingComments = post.comments?.data || [];
+        // Avoid duplicates by id
+        if (existingComments.some(c => c.id === newComment.id)) return prev;
+        // Remove temp comments with same message (optimistic update replacement)
+        const filtered = existingComments.filter(c => 
+          !(c.id.startsWith('temp-') && c.message === newComment.message && c.from?.id === newComment.from?.id)
+        );
+        post.comments = { data: [...filtered, newComment] };
+        updated[postIdx] = post;
+        if (selectedFbPost?.id === data.postId) {
+          setSelectedFbPost(post);
+        }
+        return updated;
+      });
+    };
+
+    const handleFbCommentReply = (data: any) => {
+      if (data?.pageId && data.pageId !== selectedFbPage) return;
+      const newReply = data?.reply as Comment;
+      if (!newReply || !data?.postId || !data?.parentCommentId) return;
+
+      setFbPosts((prev) => {
+        const postIdx = prev.findIndex(p => p.id === data.postId);
+        if (postIdx === -1) return prev;
+        const updated = [...prev];
+        const post = { ...updated[postIdx] };
+        const existingComments = post.comments?.data || [];
+        // Avoid duplicates by id
+        if (existingComments.some(c => c.id === newReply.id)) return prev;
+        // Remove temp comments with same message (optimistic update replacement)
+        const filtered = existingComments.filter(c => 
+          !(c.id.startsWith('temp-') && c.message === newReply.message && c.from?.id === newReply.from?.id)
+        );
+        post.comments = { data: [...filtered, newReply] };
+        updated[postIdx] = post;
+        if (selectedFbPost?.id === data.postId) {
+          setSelectedFbPost(post);
+        }
+        return updated;
+      });
+    };
+
     const cleanupNewMsg = subscribe("message.new", handleNewMessage);
     const cleanupAdminMsg = subscribe("admin:message:new", handleNewMessage);
     // Also listen to tenant-wide inbound messages to update list badges even if not joined to specific rooms
@@ -1077,6 +1136,8 @@ export default function ContactCenterPage() {
     const cleanupConvCreated = subscribe("conversation.created", handleConversationCreated);
     const cleanupVisitorTyping = subscribe("admin:typing", handleVisitorTyping);
     const cleanupVisitorTypingAlt = subscribe("widget:typing", handleVisitorTyping);
+    const cleanupFbCommentNew = subscribe("fb.comment.new", handleFbCommentNew);
+    const cleanupFbCommentReply = subscribe("fb.comment.reply", handleFbCommentReply);
 
     return () => {
       cleanupNewMsg();
@@ -1088,8 +1149,10 @@ export default function ContactCenterPage() {
       cleanupConvCreated();
       cleanupVisitorTyping();
       cleanupVisitorTypingAlt();
+      cleanupFbCommentNew();
+      cleanupFbCommentReply();
     };
-  }, [subscribe, selectedConv, loadConversations, activeTab, selectedFbPage]);
+  }, [subscribe, selectedConv, loadConversations, activeTab, selectedFbPage, selectedFbPost]);
 
   useEffect(() => {
     setVisitorTyping(false);
@@ -1197,7 +1260,12 @@ export default function ContactCenterPage() {
   const fetchFbPages = useCallback(async () => {
     try {
       const data = await api.get(`${process.env.NEXT_PUBLIC_API_URL}/integrations/facebook/status`);
-      const pages = data.data?.accounts?.filter((a: any) => a.platform === 'facebook' && a.status === 'connected') || [];
+      const rawPages = data.data?.accounts?.filter((a: any) => a.platform === 'facebook' && a.status === 'connected') || [];
+      const pages: FacebookPage[] = rawPages.map((p: any) => ({
+        pageId: p.pageId,
+        accountName: p.accountName,
+        avatarUrl: p.metadata?.profilePicture || `https://graph.facebook.com/${p.pageId}/picture?type=normal`,
+      }));
       setFbPages(pages);
       if (pages.length > 0 && !selectedFbPage) setSelectedFbPage(pages[0].pageId);
     } catch (error) {
@@ -1261,9 +1329,10 @@ export default function ContactCenterPage() {
 
     const tempId = `temp-post-${Date.now()}`;
     const pageName = fbPages.find(p => p.pageId === selectedFbPage)?.accountName || 'Página';
+    const pageAvatar = fbPages.find(p => p.pageId === selectedFbPage)?.avatarUrl;
     const optimisticComment: Comment = {
       id: tempId,
-      from: { id: selectedFbPage, name: pageName },
+      from: { id: selectedFbPage, name: pageName, picture: { data: { url: pageAvatar } } },
       message: postCommentText,
       created_time: new Date().toISOString(),
     };
@@ -1286,12 +1355,12 @@ export default function ContactCenterPage() {
       if (response.success && response.commentId) {
         const realComment: Comment = {
           id: response.commentId,
-          from: { id: selectedFbPage, name: pageName },
+          from: { id: selectedFbPage, name: pageName, picture: { data: { url: pageAvatar } } },
           message: messageToSend,
           created_time: new Date().toISOString(),
         };
         const replaced = fbPosts.map(p => p.id === selectedFbPost.id
-          ? { ...p, comments: { data: [...(p.comments?.data || []), realComment] } }
+          ? { ...p, comments: { data: (p.comments?.data || []).map(c => c.id === tempId ? realComment : c) } }
           : p);
         setFbPosts(replaced);
         setSelectedFbPost(replaced.find(p => p.id === selectedFbPost.id) || null);
@@ -1311,9 +1380,10 @@ export default function ContactCenterPage() {
     
     const tempId = `temp-${Date.now()}`;
     const pageName = fbPages.find(p => p.pageId === selectedFbPage)?.accountName || 'Página';
+    const pageAvatar = fbPages.find(p => p.pageId === selectedFbPage)?.avatarUrl;
     const optimisticComment: Comment = {
       id: tempId,
-      from: { id: selectedFbPage, name: pageName },
+      from: { id: selectedFbPage, name: pageName, picture: { data: { url: pageAvatar } } },
       message: commentReplyText,
       created_time: new Date().toISOString(),
       parent: { id: commentId },
@@ -1346,7 +1416,7 @@ export default function ContactCenterPage() {
         if (selectedFbPost && response.commentId) {
           const realComment: Comment = {
             id: response.commentId,
-            from: { id: selectedFbPage, name: pageName },
+            from: { id: selectedFbPage, name: pageName, picture: { data: { url: pageAvatar } } },
             message: messageToSend,
             created_time: new Date().toISOString(),
             parent: { id: commentId },
@@ -1400,6 +1470,20 @@ export default function ContactCenterPage() {
   useEffect(() => {
     if (activeTab === 'fb-comments' && selectedFbPage) {
       fetchFbPosts();
+      // Check if the page token has engagement permissions for reactions
+      api.get(`${API_URL}/integrations/facebook/diagnose-permissions?pageId=${selectedFbPage}`)
+        .then((data: any) => {
+          if (data?.hasEngagementPermissions === false) {
+            setFbReactionsEnabled(false);
+            toast.warning('Las reacciones (Me encanta, Me divierte, etc.) no están disponibles. Solo "Me gusta" funcionará. Para habilitar todas las reacciones, ve a Meta App Review y aprueba el permiso pages_manage_engagement, o desconecta y reconecta la página.');
+          } else {
+            setFbReactionsEnabled(true);
+          }
+        })
+        .catch(() => {
+          // If we can't check, assume enabled and let the API error handle it
+          setFbReactionsEnabled(true);
+        });
     }
   }, [activeTab, selectedFbPage, fetchFbPosts]);
 
@@ -1427,8 +1511,12 @@ export default function ContactCenterPage() {
         }
       }
     }
-    return { fbCommentRoots: roots, fbCommentChildrenMap: map };
+    return { fbCommentRoots: roots.sort((a, b) => new Date(b.created_time).getTime() - new Date(a.created_time).getTime()), fbCommentChildrenMap: map };
   }, [selectedFbPost]);
+
+  useEffect(() => {
+    setVisibleComments(5);
+  }, [selectedFbPost?.id]);
 
   const syncFacebookReaction = useCallback(async (objectId: string, reaction: { label: string; emoji: string }) => {
     const reactionMap: Record<string, string> = {
@@ -1476,7 +1564,7 @@ export default function ContactCenterPage() {
   }, [commentReactions, syncFacebookReaction]);
 
   const ReactionPicker = ({ onSelect }: { onSelect: (reaction: { label: string; emoji: string }) => void }) => {
-    const reactions = [
+    const allReactions = [
       { label: 'Me gusta', emoji: '👍', color: 'text-[#1877f2]' },
       { label: 'Me encanta', emoji: '❤️', color: 'text-[#f33e58]' },
       { label: 'Me divierte', emoji: '😆', color: 'text-[#f7b125]' },
@@ -1484,6 +1572,9 @@ export default function ContactCenterPage() {
       { label: 'Me entristece', emoji: '😢', color: 'text-[#f7b125]' },
       { label: 'Me enoja', emoji: '😡', color: 'text-[#e9710f]' },
     ];
+    const reactions = fbReactionsEnabled ? allReactions : allReactions.slice(0, 1);
+
+    if (!fbReactionsEnabled) return null;
 
     return (
       <div className="absolute bottom-full left-0 mb-0 hidden group-hover/like:flex hover:flex items-center bg-content1 rounded-full shadow-lg border border-divider/70 px-2 py-1 z-20 before:absolute before:left-0 before:right-0 before:-bottom-3 before:h-3 before:content-['']">
@@ -1513,6 +1604,33 @@ export default function ContactCenterPage() {
     if (hours < 24) return `${hours}h`;
     if (days < 7) return `${days}d`;
     return d.toLocaleDateString('es', { day: 'numeric', month: 'short' });
+  };
+
+  const formatFbDate = (date: string) => {
+    const d = new Date(date);
+    const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    return `${d.getDate()} de ${months[d.getMonth()]} a las ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+  };
+
+  const getPostDescription = (post: Post) => {
+    if (post.story) return post.story.replace(post.from?.name || '', '').trim() || post.story;
+    const statusMap: Record<string, string> = {
+      'added_photos': 'ha publicado una foto.',
+      'mobile_status_update': 'ha publicado una actualización.',
+      'created_note': 'ha creado una nota.',
+      'shared_story': 'ha compartido una historia.',
+      'created_group': 'ha creado un grupo.',
+      'approved_friend': 'tiene un nuevo amigo.',
+      'created_event': 'ha creado un evento.',
+      'wall_post': 'ha publicado en el muro.',
+      'published_story': 'ha publicado una historia.',
+      'tagged_in_photo': 'ha sido etiquetado en una foto.',
+    };
+    if (post.status_type && statusMap[post.status_type]) return statusMap[post.status_type];
+    if (post.full_picture && !post.message) return 'ha actualizado su foto de portada.';
+    if (post.full_picture && post.message) return 'ha publicado una foto.';
+    if (post.message) return 'ha publicado una actualización.';
+    return 'ha publicado contenido.';
   };
 
   // --- Render ---
@@ -1690,23 +1808,17 @@ export default function ContactCenterPage() {
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold truncate">{post.from?.name || 'Publicación'}</p>
-                        <p className="text-[11px] text-default-500 truncate mt-0.5">
-                          {(post.comments?.data || []).slice(0, 2).map(c => c.from?.name).filter(Boolean).join(', ') || 'Sin comentarios'}
-                        </p>
-                      </div>
-                      <span className="text-[10px] text-default-400 shrink-0">
-                        {formatFbTime(post.created_time)}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-default-500 line-clamp-2 mt-1">
-                      {post.message || 'Sin texto'}
+                    <p className="text-xs font-semibold line-clamp-2 text-foreground">
+                      {post.message ? (post.message.length > 80 ? post.message.substring(0, 80) + '...' : post.message) : post.story || `${post.from?.name || 'Página'} ${getPostDescription(post)}`}
                     </p>
-                    <div className="flex items-center gap-2 mt-2 text-[10px] text-default-500">
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="text-[10px] text-default-500 truncate">Publicado por . {post.admin_creator?.name || post.from?.name || 'Página'}</span>
+                      <span className="text-[10px] text-default-400">·</span>
+                      <span className="text-[10px] text-default-400 shrink-0">{formatFbTime(post.created_time)}</span>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1.5 text-[10px] text-default-500">
                       <span className="inline-flex items-center gap-1">
-                        <ThumbsUp size={11} /> 0
+                        <ThumbsUp size={11} /> {post.reactions?.summary?.total_count || post.likes?.summary?.total_count || 0}
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <MessageCircle size={11} /> {post.comments?.data?.length || 0}
@@ -1853,10 +1965,10 @@ export default function ContactCenterPage() {
                       <div className="flex flex-col min-w-0 flex-1">
                         <div className="text-base leading-5">
                           <span className="font-bold text-primary">{selectedFbPost.from?.name || 'Página'}</span>
-                          <span className="text-default-600"> ha actualizado su foto de portada.</span>
+                          <span className="text-default-600"> {getPostDescription(selectedFbPost)}</span>
                         </div>
                         <div className="text-xs text-default-500 mt-0.5">
-                          Publicado · {formatFbTime(selectedFbPost.created_time)} · 🌐
+                          Publicado por {selectedFbPost.admin_creator?.name || selectedFbPost.from?.name || 'Página'} · {formatFbDate(selectedFbPost.created_time)} · 🌐
                         </div>
                       </div>
                       <Button isIconOnly size="sm" variant="light" className="shrink-0">
@@ -1896,7 +2008,7 @@ export default function ContactCenterPage() {
                           <button className="text-sm font-semibold text-default-600 inline-flex items-center gap-1">Más recientes <span className="text-xs">▾</span></button>
                         </div>
                         <div className="space-y-3 pb-4">
-                    {fbCommentRoots.map(comment => (
+                    {fbCommentRoots.slice(0, visibleComments).map(comment => (
                       <div key={comment.id} className="flex gap-2">
                         <Avatar 
                           name={comment.from?.name?.substring(0, 2) || 'U'} 
@@ -2017,6 +2129,18 @@ export default function ContactCenterPage() {
                       </div>
                     ))}
                         </div>
+                        {fbCommentRoots.length > visibleComments && (
+                          <div className="flex justify-center pb-4">
+                            <Button
+                              size="sm"
+                              variant="flat"
+                              color="primary"
+                              onPress={() => setVisibleComments((prev) => prev + 5)}
+                            >
+                              Mostrar más comentarios ({fbCommentRoots.length - visibleComments} restantes)
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </CardBody>
                   </Card>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
@@ -18,6 +18,9 @@ interface FacebookPage {
   picture?: string;
   category?: string;
   fanCount?: number;
+  instagramLinked?: boolean;
+  instagramError?: string | null;
+  hasInstagramBusinessAccount?: boolean;
   instagramAccount?: {
     id: string;
     username: string;
@@ -27,6 +30,8 @@ interface FacebookPage {
   };
 }
 
+const processedCodes = new Set<string>();
+
 export default function FacebookCallbackPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -35,12 +40,8 @@ export default function FacebookCallbackPage() {
   const [error, setError] = useState("");
   const [connectingPageId, setConnectingPageId] = useState<string | null>(null);
   const [selectionToken, setSelectionToken] = useState("");
-  const processedRef = useRef(false);
 
   useEffect(() => {
-    if (processedRef.current) return;
-    processedRef.current = true;
-
     const code = searchParams.get("code");
     const errorParam = searchParams.get("error");
 
@@ -55,6 +56,9 @@ export default function FacebookCallbackPage() {
       setError("No se recibió código de autorización de Facebook");
       return;
     }
+
+    if (processedCodes.has(code)) return;
+    processedCodes.add(code);
 
     exchangeToken(code);
   }, [searchParams]);
@@ -123,7 +127,7 @@ export default function FacebookCallbackPage() {
           <Facebook size={24} />
         </div>
         <div>
-          <h1 className="text-xl font-bold">Conectar Facebook Messenger</h1>
+          <h1 className="text-xl font-bold">Conectar Facebook e Instagram</h1>
           <p className="text-sm text-default-500">Selecciona la página que deseas conectar</p>
         </div>
       </div>
@@ -165,13 +169,35 @@ export default function FacebookCallbackPage() {
                         </span>
                       )}
                     </div>
-                    {page.instagramAccount && (
+                    {page.instagramAccount && page.instagramLinked && (
                       <div className="flex items-center gap-1.5 mt-1.5 text-xs text-default-500">
                         <Instagram size={12} className="text-pink-500" />
                         <span className="font-medium">@{page.instagramAccount.username}</span>
                         {page.instagramAccount.followersCount != null && (
                           <span className="text-default-400">• {page.instagramAccount.followersCount.toLocaleString()} seguidores</span>
                         )}
+                        <Chip size="sm" color="success" variant="flat" className="ml-1 text-[9px] h-4">IG conectado</Chip>
+                      </div>
+                    )}
+                    {page.hasInstagramBusinessAccount && !page.instagramLinked && (
+                      <div className="flex items-center gap-1.5 mt-1.5 text-xs text-warning-500">
+                        <Instagram size={12} />
+                        <span>Instagram detectado pero sin acceso{page.instagramError ? `: ${page.instagramError}` : ''}</span>
+                      </div>
+                    )}
+                    {!page.hasInstagramBusinessAccount && (
+                      <div className="flex items-center gap-1.5 mt-1.5 text-xs text-default-400">
+                        <Instagram size={12} />
+                        <span>Sin Instagram vinculado</span>
+                        <span className="text-default-300">·</span>
+                        <a 
+                          href="https://www.facebook.com/help/instagram/3568527945823714" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          Cómo vincular
+                        </a>
                       </div>
                     )}
                   </div>
@@ -212,7 +238,7 @@ export default function FacebookCallbackPage() {
               <h2 className="text-lg font-bold text-success">¡Conexión Exitosa!</h2>
               <p className="text-sm text-default-500 mt-1">
                 Tu página de Facebook ha sido conectada. Los mensajes de Messenger{" "}
-                {pages.find(p => p.id === connectingPageId)?.instagramAccount && "e Instagram DMs "}
+                {pages.find(p => p.id === connectingPageId)?.instagramLinked && "e Instagram DMs "}
                 aparecerán automáticamente en tu Contact Center.
               </p>
             </div>

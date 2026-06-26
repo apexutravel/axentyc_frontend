@@ -119,7 +119,7 @@ const otherIntegrations = [
     name: "Instagram",
     description: "Gestiona mensajes directos y comentarios de Instagram.",
     icon: "📸",
-    status: "coming_soon" as const,
+    status: "available" as const,
   },
   {
     name: "TikTok",
