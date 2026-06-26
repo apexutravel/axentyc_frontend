@@ -703,17 +703,18 @@ export default function IntegrationsPage() {
           </Card>
         </motion.div>
 
-        {/* Facebook Messenger Card */}
+        {/* Facebook + Instagram Card */}
         <motion.div variants={item}>
           <Card className={`border h-full ${fbStatus.connected ? 'border-blue-500/30' : 'border-divider'}`}>
             <CardBody className="gap-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
-                    <Facebook size={20} />
+                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500/10 to-pink-500/10 flex items-center justify-center">
+                    <Facebook size={18} className="text-blue-500" />
+                    <Instagram size={14} className="text-pink-500 -ml-1 -mb-1" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold">Facebook Messenger</p>
+                    <p className="text-sm font-semibold">Facebook e Instagram</p>
                     <Chip
                       color={fbStatus.connected ? 'success' : 'default'}
                       size="sm"
@@ -735,49 +736,98 @@ export default function IntegrationsPage() {
                 </Button>
               </div>
 
-              {/* Connected pages list */}
-              {fbStatus.accounts.filter(a => a.status === 'connected').length > 0 && (
-                <div className="space-y-2">
-                  {fbStatus.accounts.filter(a => a.status === 'connected').map((acc) => (
-                    <div key={acc._id} className="flex items-center justify-between bg-default-50 dark:bg-default-100/50 rounded-lg px-2.5 py-1.5">
-                      <div className="flex items-center gap-2 min-w-0">
-                        {acc.platform === 'instagram' ? (
-                          <Instagram size={14} className="text-pink-500 flex-shrink-0" />
-                        ) : (
-                          <Facebook size={14} className="text-blue-500 flex-shrink-0" />
-                        )}
-                        {(acc.metadata?.picture || acc.metadata?.profilePicture) && (
-                          <img 
-                            src={acc.metadata.picture || acc.metadata.profilePicture} 
-                            alt="" 
-                            className="w-5 h-5 rounded-full flex-shrink-0" 
-                          />
-                        )}
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-xs font-medium truncate">{acc.accountName}</span>
-                          {acc.platform === 'instagram' && acc.metadata?.followersCount != null && (
-                            <span className="text-[10px] text-default-400">{acc.metadata.followersCount.toLocaleString()} seguidores</span>
+              {/* Connected accounts - grouped by page */}
+              {(() => {
+                const connected = fbStatus.accounts.filter(a => a.status === 'connected');
+                if (connected.length === 0) return null;
+
+                // Group: FB pages with their linked IG accounts
+                const fbPages = connected.filter(a => a.platform === 'facebook');
+                const igAccounts = connected.filter(a => a.platform === 'instagram');
+                const igByPageId = new Map(igAccounts.map(ig => [ig.pageId, ig]));
+                const standaloneIg = igAccounts.filter(ig => !fbPages.some(fb => fb.pageId === ig.pageId));
+
+                return (
+                  <div className="space-y-2">
+                    {fbPages.map((fb) => {
+                      const ig = igByPageId.get(fb.pageId);
+                      return (
+                        <div key={fb._id} className="bg-default-50 dark:bg-default-100/50 rounded-lg px-2.5 py-2 space-y-1.5">
+                          {/* Facebook page row */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Facebook size={14} className="text-blue-500 flex-shrink-0" />
+                              {(fb.metadata?.picture) && (
+                                <img src={fb.metadata.picture} alt="" className="w-5 h-5 rounded-full flex-shrink-0" />
+                              )}
+                              <span className="text-xs font-medium truncate">{fb.accountName}</span>
+                              <Chip size="sm" variant="flat" className="text-[9px] h-4">Messenger</Chip>
+                            </div>
+                            <Button
+                              size="sm" variant="light" color="danger" isIconOnly
+                              className="min-w-6 w-6 h-6 flex-shrink-0"
+                              isLoading={fbDisconnecting}
+                              onPress={() => disconnectFacebook(fb._id)}
+                            >
+                              <Trash2 size={12} />
+                            </Button>
+                          </div>
+                          {/* Linked Instagram row */}
+                          {ig && (
+                            <div className="flex items-center justify-between pl-5 border-l-2 border-pink-500/20 ml-1">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Instagram size={14} className="text-pink-500 flex-shrink-0" />
+                                {(ig.metadata?.profilePicture) && (
+                                  <img src={ig.metadata.profilePicture} alt="" className="w-5 h-5 rounded-full flex-shrink-0" />
+                                )}
+                                <span className="text-xs font-medium truncate">@{ig.accountName}</span>
+                                {ig.metadata?.followersCount != null && (
+                                  <span className="text-[10px] text-default-400">{ig.metadata.followersCount.toLocaleString()}</span>
+                                )}
+                                <Chip size="sm" color="secondary" variant="flat" className="text-[9px] h-4">IG DMs</Chip>
+                              </div>
+                              <Button
+                                size="sm" variant="light" color="danger" isIconOnly
+                                className="min-w-6 w-6 h-6 flex-shrink-0"
+                                isLoading={fbDisconnecting}
+                                onPress={() => disconnectFacebook(ig._id)}
+                              >
+                                <Trash2 size={12} />
+                              </Button>
+                            </div>
                           )}
                         </div>
+                      );
+                    })}
+                    {/* Standalone Instagram accounts (no linked FB page found) */}
+                    {standaloneIg.map((ig) => (
+                      <div key={ig._id} className="bg-default-50 dark:bg-default-100/50 rounded-lg px-2.5 py-1.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Instagram size={14} className="text-pink-500 flex-shrink-0" />
+                            {(ig.metadata?.profilePicture) && (
+                              <img src={ig.metadata.profilePicture} alt="" className="w-5 h-5 rounded-full flex-shrink-0" />
+                            )}
+                            <span className="text-xs font-medium truncate">@{ig.accountName}</span>
+                            <Chip size="sm" color="secondary" variant="flat" className="text-[9px] h-4">IG DMs</Chip>
+                          </div>
+                          <Button
+                            size="sm" variant="light" color="danger" isIconOnly
+                            className="min-w-6 w-6 h-6 flex-shrink-0"
+                            isLoading={fbDisconnecting}
+                            onPress={() => disconnectFacebook(ig._id)}
+                          >
+                            <Trash2 size={12} />
+                          </Button>
+                        </div>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="light"
-                        color="danger"
-                        isIconOnly
-                        className="min-w-6 w-6 h-6 flex-shrink-0"
-                        isLoading={fbDisconnecting}
-                        onPress={() => disconnectFacebook(acc._id)}
-                      >
-                        <Trash2 size={12} />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                );
+              })()}
 
               <p className="text-xs text-default-400">
-                Recibe y responde mensajes de Facebook Messenger{fbStatus.accounts.some(a => a.platform === 'instagram' && a.status === 'connected') ? ' e Instagram DMs' : ''} directamente desde tu CRM.
+                Conecta tu página de Facebook para gestionar Messenger e Instagram DMs y comentarios desde tu CRM. Si tu página tiene Instagram vinculado, se conecta automáticamente.
               </p>
               
               {!fbConfigExists && (

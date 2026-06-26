@@ -102,6 +102,10 @@ export const API_ENDPOINTS = {
       status: `${API_URL}/integrations/facebook/status`,
       disconnect: (id: string) => `${API_URL}/integrations/facebook/disconnect/${id}`,
     },
+    instagram: {
+      diagnose: `${API_URL}/integrations/instagram/diagnose`,
+      syncMessages: `${API_URL}/integrations/instagram/sync-messages`,
+    },
   },
   emails: {
     list: `${API_URL}/emails`,

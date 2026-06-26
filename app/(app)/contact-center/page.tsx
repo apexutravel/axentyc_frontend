@@ -298,6 +298,7 @@ export default function ContactCenterPage() {
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [sendingMsg, setSendingMsg] = useState(false);
+  const [igSyncing, setIgSyncing] = useState(false);
   const [imagePreview, setImagePreview] = useState<{file: File; url: string; caption: string} | null>(null);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -415,6 +416,27 @@ export default function ContactCenterPage() {
       setLoadingConvs(false);
     }
   }, [statusFilter]);
+
+  const syncInstagramMessages = async () => {
+    setIgSyncing(true);
+    try {
+      await api.post(API_ENDPOINTS.integrations.instagram.syncMessages, {});
+      await loadConversations();
+      addToast({
+        title: "Instagram sincronizado",
+        description: "Mensajes de Instagram actualizados",
+        color: "success",
+      });
+    } catch (error: any) {
+      addToast({
+        title: "Error al sincronizar Instagram",
+        description: error?.message || "Error desconocido",
+        color: "danger",
+      });
+    } finally {
+      setIgSyncing(false);
+    }
+  };
 
   const loadMessages = useCallback(async (conversationId: string) => {
     setLoadingMsgs(true);
@@ -1698,15 +1720,30 @@ export default function ContactCenterPage() {
                 {isFbCommentsTab ? 'Selecciona una publicación para responder' : isIgCommentsTab ? 'Comentarios de Instagram separados del chat' : `${filteredConversations.length} conversación${filteredConversations.length === 1 ? '' : 'es'}`}
               </p>
             </div>
-            <Button
-              isIconOnly
-              size="sm"
-              variant="flat"
-              radius="full"
-              onPress={isFbCommentsTab ? fetchFbPosts : isIgCommentsTab ? undefined : loadConversations}
-            >
-              <RefreshCw size={15} />
-            </Button>
+            <div className="flex items-center gap-1">
+              {activeTab === 'instagram' && (
+                <Button
+                  isIconOnly
+                  size="sm"
+                  variant="flat"
+                  radius="full"
+                  isLoading={igSyncing}
+                  onPress={syncInstagramMessages}
+                  title="Sincronizar Instagram DMs"
+                >
+                  <Instagram size={15} className="text-pink-500" />
+                </Button>
+              )}
+              <Button
+                isIconOnly
+                size="sm"
+                variant="flat"
+                radius="full"
+                onPress={isFbCommentsTab ? fetchFbPosts : isIgCommentsTab ? undefined : loadConversations}
+              >
+                <RefreshCw size={15} />
+              </Button>
+            </div>
           </div>
           
           {isFbCommentsTab ? (
