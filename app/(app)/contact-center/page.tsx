@@ -277,6 +277,10 @@ export default function ContactCenterPage() {
   const [postReaction, setPostReaction] = useState<{ label: string; emoji: string } | null>(null);
   const [commentReactions, setCommentReactions] = useState<Record<string, { label: string; emoji: string }>>({});
   const [sendingComment, setSendingComment] = useState(false);
+  const [dmModalOpen, setDmModalOpen] = useState(false);
+  const [dmRecipient, setDmRecipient] = useState<{ id: string; name: string } | null>(null);
+  const [dmText, setDmText] = useState('');
+  const [sendingDm, setSendingDm] = useState(false);
   
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
@@ -1226,6 +1230,32 @@ export default function ContactCenterPage() {
     fetchFbPostsRef.current = fetchFbPosts;
   }, [fetchFbPosts]);
 
+  const sendDirectMessage = useCallback(async () => {
+    if (!dmRecipient || !dmText.trim() || !selectedFbPage) return;
+    setSendingDm(true);
+    try {
+      await api.post(`${API_URL}/integrations/facebook/send-direct-message`, {
+        pageId: selectedFbPage,
+        recipientPsid: dmRecipient.id,
+        message: dmText.trim(),
+      });
+      toast.success(`Mensaje enviado a ${dmRecipient.name}`);
+      setDmModalOpen(false);
+      setDmRecipient(null);
+      setDmText('');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || error.message || 'Error al enviar mensaje directo');
+    } finally {
+      setSendingDm(false);
+    }
+  }, [dmRecipient, dmText, selectedFbPage]);
+
+  const openDmModal = useCallback((comment: Comment) => {
+    setDmRecipient({ id: comment.from?.id || '', name: comment.from?.name || 'Usuario' });
+    setDmText('');
+    setDmModalOpen(true);
+  }, []);
+
   const sendPostComment = useCallback(async () => {
     if (!postCommentText.trim() || !selectedFbPost) return;
 
@@ -1456,7 +1486,7 @@ export default function ContactCenterPage() {
     ];
 
     return (
-      <div className="absolute bottom-full left-0 mb-0 hidden group-hover/like:flex hover:flex items-center bg-white rounded-full shadow-lg border border-divider/70 px-2 py-1 z-20 before:absolute before:left-0 before:right-0 before:-bottom-3 before:h-3 before:content-['']">
+      <div className="absolute bottom-full left-0 mb-0 hidden group-hover/like:flex hover:flex items-center bg-content1 rounded-full shadow-lg border border-divider/70 px-2 py-1 z-20 before:absolute before:left-0 before:right-0 before:-bottom-3 before:h-3 before:content-['']">
         {reactions.map((reaction) => (
           <button
             key={reaction.label}
@@ -1809,10 +1839,10 @@ export default function ContactCenterPage() {
               </p>
             </div>
           ) : (
-            <div className="flex-1 min-h-0 flex flex-col bg-[#f0f2f5]">
+            <div className="flex-1 min-h-0 flex flex-col bg-default-100">
               <div className="flex-1 min-h-0 overflow-y-auto p-4">
                 <div className="max-w-xl mx-auto">
-                  <Card shadow="sm" className="border border-divider overflow-hidden bg-white">
+                  <Card shadow="sm" className="border border-divider overflow-hidden bg-content1">
                     <CardHeader className="flex gap-3 items-start pb-2 pt-4 px-4">
                       <Avatar 
                         name={selectedFbPost.from?.name?.substring(0, 2) || 'P'} 
@@ -1875,9 +1905,9 @@ export default function ContactCenterPage() {
                           size="sm" 
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="bg-[#f0f2f5] rounded-2xl px-3 py-2 inline-block max-w-full">
-                            <div className="font-semibold text-xs">{comment.from?.name || 'Usuario'}</div>
-                            <div className="text-xs whitespace-pre-wrap break-words">{comment.message}</div>
+                          <div className="bg-default-100 rounded-2xl px-3 py-2 inline-block max-w-full">
+                            <div className="font-semibold text-xs text-foreground">{comment.from?.name || 'Usuario'}</div>
+                            <div className="text-xs text-foreground whitespace-pre-wrap break-words">{comment.message}</div>
                           </div>
                           <div className="flex items-center gap-3 mt-0.5 px-2 text-[10px] text-default-500">
                             <div className="relative group/like">
@@ -1908,7 +1938,10 @@ export default function ContactCenterPage() {
                             >
                               Responder
                             </button>
-                            <button className="font-semibold text-primary hover:underline">Enviar mensaje</button>
+                            <button
+                              className="font-semibold text-primary hover:underline"
+                              onClick={() => openDmModal(comment)}
+                            >Enviar mensaje</button>
                             <span>{formatFbTime(comment.created_time)}</span>
                             {((comment.like_count || 0) + (commentReactions[comment.id] ? 1 : 0)) > 0 && (
                               <span className="inline-flex items-center gap-1 ml-auto text-default-500 font-semibold">
@@ -1925,7 +1958,7 @@ export default function ContactCenterPage() {
                                 className="bg-primary text-white flex-shrink-0" 
                                 size="sm" 
                               />
-                              <div className="flex-1 flex items-center gap-1.5 bg-[#f0f2f5] rounded-full pl-2.5 pr-1 py-0.5">
+                              <div className="flex-1 flex items-center gap-1.5 bg-default-100 rounded-full pl-2.5 pr-1 py-0.5">
                                 <Input
                                   aria-label="Escribe una respuesta"
                                   variant="bordered"
@@ -1968,12 +2001,13 @@ export default function ContactCenterPage() {
                                 <div key={reply.id} className="flex gap-1.5">
                                   <Avatar 
                                     name={reply.from?.name?.substring(0, 2) || 'U'} 
+                                    src={reply.from?.picture?.data?.url}
                                     className="bg-default-300 text-white flex-shrink-0" 
                                     size="sm" 
                                   />
-                                  <div className="bg-[#f0f2f5] rounded-2xl px-3 py-2 inline-block max-w-full">
-                                    <div className="font-semibold text-xs">{reply.from?.name || 'Usuario'}</div>
-                                    <div className="text-xs whitespace-pre-wrap break-words">{reply.message}</div>
+                                  <div className="bg-default-100 rounded-2xl px-3 py-2 inline-block max-w-full">
+                                    <div className="font-semibold text-xs text-foreground">{reply.from?.name || 'Usuario'}</div>
+                                    <div className="text-xs text-foreground whitespace-pre-wrap break-words">{reply.message}</div>
                                   </div>
                                 </div>
                               ))}
@@ -2780,6 +2814,60 @@ export default function ContactCenterPage() {
           </ModalContent>
         </Modal>
       )}
+
+      {/* Modal: Send Direct Message (from FB comments) */}
+      <Modal
+        isOpen={dmModalOpen}
+        onClose={() => { setDmModalOpen(false); setDmRecipient(null); setDmText(''); }}
+        size="md"
+      >
+        <ModalContent>
+          <ModalHeader>Enviar mensaje directo</ModalHeader>
+          <ModalBody>
+            {dmRecipient && (
+              <div className="flex items-center gap-3 mb-2 p-3 bg-default-100 rounded-lg">
+                <Avatar
+                  name={dmRecipient.name?.substring(0, 2) || 'U'}
+                  className="bg-primary text-white"
+                  size="sm"
+                />
+                <div>
+                  <div className="font-semibold text-sm">{dmRecipient.name}</div>
+                  <div className="text-xs text-default-500">Facebook Messenger</div>
+                </div>
+              </div>
+            )}
+            <Textarea
+              label="Mensaje"
+              labelPlacement="outside"
+              placeholder={`Escribe un mensaje para ${dmRecipient?.name || 'este usuario'}...`}
+              value={dmText}
+              onValueChange={setDmText}
+              minRows={3}
+              maxRows={6}
+              variant="bordered"
+              autoFocus
+            />
+            <p className="text-xs text-default-400">
+              Este mensaje se enviará por Messenger y se creará una conversación en la bandeja de entrada.
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={() => { setDmModalOpen(false); setDmRecipient(null); setDmText(''); }}>
+              Cancelar
+            </Button>
+            <Button
+              color="primary"
+              isDisabled={!dmText.trim() || sendingDm}
+              onPress={sendDirectMessage}
+              isLoading={sendingDm}
+              startContent={!sendingDm && <Send size={16} />}
+            >
+              Enviar
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
       </div>
     </div>
   );
