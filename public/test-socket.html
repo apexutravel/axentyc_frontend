@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Socket.IO - AXENTYC</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; }
+        #log { white-space: pre-wrap; background: #000; padding: 10px; border: 1px solid #0f0; }
+        button { margin: 5px; padding: 10px; background: #0f0; color: #000; border: none; cursor: pointer; }
+        input { padding: 10px; margin: 5px; width: 300px; }
+    </style>
+</head>
+<body>
+    <h1>🔌 Test Socket.IO - AXENTYC</h1>
+    
+    <div>
+        <input id="tenantId" placeholder="Tenant ID" />
+        <button onclick="connect()">Conectar</button>
+        <button onclick="disconnect()">Desconectar</button>
+    </div>
+    
+    <h3>Log:</h3>
+    <div id="log"></div>
+
+    <script>
+        let socket = null;
+        
+        function log(msg) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${msg}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function connect() {
+            const tenantId = document.getElementById('tenantId').value;
+            if (!tenantId) {
+                alert('Ingresa un Tenant ID');
+                return;
+            }
+            
+            log('🔄 Conectando a https://api.axentyc.apexucode.com...');
+            
+            socket = io('https://api.axentyc.apexucode.com', {
+                transports: ['websocket', 'polling'],
+                reconnection: true
+            });
+            
+            socket.on('connect', () => {
+                log(`✅ CONECTADO - Socket ID: ${socket.id}`);
+                log(`📡 Uniéndose a tenant room: tenant:${tenantId}`);
+                socket.emit('join:tenant', { tenantId });
+            });
+            
+            socket.on('disconnect', () => {
+                log('❌ DESCONECTADO');
+            });
+            
+            socket.on('connect_error', (error) => {
+                log(`❌ ERROR DE CONEXIÓN: ${error.message}`);
+            });
+            
+            // Escuchar eventos de conversación
+            socket.on('conversation.created', (data) => {
+                log(`🆕 CONVERSATION.CREATED:`);
+                log(JSON.stringify(data, null, 2));
+            });
+            
+            socket.on('message.received', (data) => {
+                log(`📨 MESSAGE.RECEIVED:`);
+                log(JSON.stringify(data, null, 2));
+            });
+            
+            socket.on('conversation.updated', (data) => {
+                log(`🔄 CONVERSATION.UPDATED:`);
+                log(JSON.stringify(data, null, 2));
+            });
+            
+            // Escuchar TODOS los eventos
+            socket.onAny((eventName, ...args) => {
+                if (!['connect', 'disconnect', 'connect_error'].includes(eventName)) {
+                    log(`📡 EVENTO: ${eventName}`);
+                }
+            });
+        }
+        
+        function disconnect() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+                log('🔌 Socket desconectado manualmente');
+            }
+        }
+        
+        log('✅ Página cargada. Ingresa tu Tenant ID y haz clic en Conectar.');
+        log('📝 Luego envía un mensaje de prueba a Messenger y observa los eventos aquí.');
+    </script>
+</body>
+</html>
