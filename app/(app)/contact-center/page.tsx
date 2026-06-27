@@ -1509,8 +1509,6 @@ export default function ContactCenterPage() {
     }
   }, [activeTab, selectedFbPage, fetchFbPosts]);
 
-  // Removed periodic polling to avoid flicker; rely on websockets and targeted updates only.
-
   // Process threaded comments
   const { fbCommentRoots, fbCommentChildrenMap } = useMemo(() => {
     const all = (selectedFbPost?.comments?.data || []) as Comment[];
