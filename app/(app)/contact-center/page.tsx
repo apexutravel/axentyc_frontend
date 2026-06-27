@@ -1041,18 +1041,28 @@ export default function ContactCenterPage() {
     const handleConvUpdated = (data: any) => {
       console.log("[LiveChat] conversation.updated:", data);
       if (data?._id) {
-        setConversations((prev) =>
-          prev.map((c) =>
+        setConversations((prev) => {
+          const exists = prev.find((c) => c._id === data._id);
+          if (!exists) {
+            // Conversation not in list yet, trigger a reload
+            loadConversations();
+            return prev;
+          }
+          // Update existing conversation in list
+          return prev.map((c) =>
             c._id === data._id
               ? {
                   ...c,
                   ...(data.subject ? { subject: data.subject } : {}),
                   ...(data.tags ? { tags: data.tags } : {}),
                   ...(data.status ? { status: data.status } : {}),
+                  ...(data.lastMessage ? { lastMessage: data.lastMessage } : {}),
+                  ...(data.lastMessageAt ? { lastMessageAt: data.lastMessageAt } : {}),
+                  ...(data.unreadCount !== undefined ? { unreadCount: data.unreadCount } : {}),
                 }
               : c
-          )
-        );
+          );
+        });
         if (selectedConv && data._id === selectedConv._id) {
           setSelectedConv((prev) =>
             prev
@@ -1066,7 +1076,6 @@ export default function ContactCenterPage() {
           );
         }
       }
-      loadConversations();
     };
 
     const handleStatusUpdated = (data: any) => {
@@ -1114,15 +1123,13 @@ export default function ContactCenterPage() {
     const handleConversationCreated = (data: any) => {
       console.log("[LiveChat] conversation.created:", data);
       
-      // Optimistically add to conversations list
+      // Add to conversations list immediately (already populated from backend)
       setConversations((prev) => {
         const exists = prev.some((c) => c._id === data._id);
         if (exists) return prev;
+        // Insert at the beginning (most recent)
         return [data, ...prev];
       });
-      
-      // Also reload to ensure we have full data
-      loadConversations();
       
       addToast({ 
         title: `Nueva conversación: ${data.contactId?.name || 'Visitante'}`, 
