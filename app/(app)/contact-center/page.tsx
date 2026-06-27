@@ -227,6 +227,56 @@ function MessageStatus({ status }: { status: string }) {
   return <DoubleCheck color="#8696a0" />;
 }
 
+function getTabTheme(tab: string) {
+  const key = (tab || "all").toLowerCase();
+  if (key === "instagram" || key === "ig-comments") {
+    return {
+      shell: "from-pink-50/70 via-purple-50/50 to-orange-50/40 dark:from-pink-950/20 dark:via-purple-950/20 dark:to-orange-950/10",
+      panel: "border-pink-200/60 dark:border-pink-800/40 bg-gradient-to-b from-pink-50/80 via-content1 to-purple-50/50 dark:from-pink-950/15 dark:via-content1 dark:to-purple-950/10",
+      header: "bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-orange-400/10 border-pink-200/60 dark:border-pink-800/40",
+      selected: "bg-gradient-to-r from-pink-500/15 via-purple-500/10 to-orange-400/10 border-l-pink-500 shadow-sm",
+      hover: "hover:bg-pink-50/80 dark:hover:bg-pink-950/20 border-l-transparent",
+      cursor: "rounded-lg bg-gradient-to-r from-pink-500 via-purple-500 to-orange-400",
+      badge: "secondary" as const,
+      icon: "text-pink-500",
+    };
+  }
+  if (key === "whatsapp") {
+    return {
+      shell: "from-green-50/70 via-emerald-50/50 to-teal-50/40 dark:from-green-950/20 dark:via-emerald-950/20 dark:to-teal-950/10",
+      panel: "border-green-200/60 dark:border-green-800/40 bg-gradient-to-b from-green-50/80 via-content1 to-emerald-50/50 dark:from-green-950/15 dark:via-content1 dark:to-emerald-950/10",
+      header: "bg-gradient-to-r from-green-500/10 via-emerald-500/10 to-teal-400/10 border-green-200/60 dark:border-green-800/40",
+      selected: "bg-gradient-to-r from-green-500/15 via-emerald-500/10 to-teal-400/10 border-l-green-500 shadow-sm",
+      hover: "hover:bg-green-50/80 dark:hover:bg-green-950/20 border-l-transparent",
+      cursor: "rounded-lg bg-gradient-to-r from-green-500 via-emerald-500 to-teal-400",
+      badge: "success" as const,
+      icon: "text-green-500",
+    };
+  }
+  if (key === "messenger" || key === "fb-comments") {
+    return {
+      shell: "from-blue-50/70 via-sky-50/50 to-indigo-50/40 dark:from-blue-950/20 dark:via-sky-950/20 dark:to-indigo-950/10",
+      panel: "border-blue-200/60 dark:border-blue-800/40 bg-gradient-to-b from-blue-50/80 via-content1 to-sky-50/50 dark:from-blue-950/15 dark:via-content1 dark:to-sky-950/10",
+      header: "bg-gradient-to-r from-blue-600/10 via-sky-500/10 to-indigo-500/10 border-blue-200/60 dark:border-blue-800/40",
+      selected: "bg-gradient-to-r from-blue-600/15 via-sky-500/10 to-indigo-500/10 border-l-blue-600 shadow-sm",
+      hover: "hover:bg-blue-50/80 dark:hover:bg-blue-950/20 border-l-transparent",
+      cursor: "rounded-lg bg-gradient-to-r from-blue-600 via-sky-500 to-indigo-500",
+      badge: "primary" as const,
+      icon: "text-blue-600",
+    };
+  }
+  return {
+    shell: "from-content1 via-default-50/60 to-primary/5 dark:from-content1 dark:via-default-100/10 dark:to-primary/10",
+    panel: "border-divider/70 bg-content1/95",
+    header: "bg-content1/90 border-divider/70",
+    selected: "bg-primary/10 border-l-primary shadow-sm",
+    hover: "hover:bg-default-100/80 border-l-transparent",
+    cursor: "rounded-lg bg-primary",
+    badge: "primary" as const,
+    icon: "text-primary",
+  };
+}
+
 function ChannelIcon({ channel }: { channel: string }) {
   const channelLower = (channel || "web_chat").toLowerCase();
   
@@ -268,6 +318,7 @@ export default function ContactCenterPage() {
   const { tenant } = useAuth();
   const { markConversationRead, setActiveConversationId } = useNotificationCenter();
   const [activeTab, setActiveTab] = useState("all");
+  const tabTheme = getTabTheme(activeTab);
   
   // Facebook Comments states
   const [fbPages, setFbPages] = useState<FacebookPage[]>([]);
@@ -306,6 +357,7 @@ export default function ContactCenterPage() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [selectedMember, setSelectedMember] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const previousTabRef = useRef(activeTab);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const visitorTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const adminTypingStateRef = useRef(false);
@@ -1273,7 +1325,32 @@ export default function ContactCenterPage() {
     if (tab) setActiveTab(tab);
   }, [searchParams]);
 
+  useEffect(() => {
+    if (previousTabRef.current === activeTab) return;
+    if (selectedConv?._id) {
+      leaveWidgetAdmin(selectedConv._id);
+    }
+    setSelectedConv(null);
+    setMessages([]);
+    setFirstUnreadIndex(-1);
+    setMessageInput("");
+    setVisitorTyping(false);
+    setShowContactPanel(false);
+    setActiveConversationId(null);
+    previousTabRef.current = activeTab;
+  }, [activeTab, selectedConv?._id, leaveWidgetAdmin, setActiveConversationId]);
+
   const handleTabChange = (key: string) => {
+    if (selectedConv?._id) {
+      leaveWidgetAdmin(selectedConv._id);
+    }
+    setSelectedConv(null);
+    setMessages([]);
+    setFirstUnreadIndex(-1);
+    setMessageInput("");
+    setVisitorTyping(false);
+    setShowContactPanel(false);
+    setActiveConversationId(null);
     setActiveTab(key);
     router.push(`/contact-center?tab=${key}`);
   };
@@ -1697,8 +1774,8 @@ export default function ContactCenterPage() {
         >
           <Tab key="all" title={<span className="text-xs flex items-center gap-1.5"><MessagesSquare size={14} />Todos {unreadCounts.all > 0 && (<Chip size="sm" color="primary" variant="solid" className="h-4 min-w-4 text-[9px] px-1">{unreadCounts.all}</Chip>)}</span>} />
           <Tab key="messenger" title={<span className="text-xs flex items-center gap-1.5"><Facebook size={14} />Messenger {unreadCounts.messenger > 0 && (<Chip size="sm" color="primary" variant="solid" className="h-4 min-w-4 text-[9px] px-1">{unreadCounts.messenger}</Chip>)}</span>} />
-          <Tab key="instagram" title={<span className="text-xs flex items-center gap-1.5"><Instagram size={14} />Instagram {unreadCounts.instagram > 0 && (<Chip size="sm" color="primary" variant="solid" className="h-4 min-w-4 text-[9px] px-1">{unreadCounts.instagram}</Chip>)}</span>} />
-          <Tab key="whatsapp" title={<span className="text-xs flex items-center gap-1.5"><MessageCircle size={14} />WhatsApp {unreadCounts.whatsapp > 0 && (<Chip size="sm" color="primary" variant="solid" className="h-4 min-w-4 text-[9px] px-1">{unreadCounts.whatsapp}</Chip>)}</span>} />
+          <Tab key="instagram" title={<span className="text-xs flex items-center gap-1.5"><Instagram size={14} />Instagram {unreadCounts.instagram > 0 && (<Chip size="sm" color="secondary" variant="solid" className="h-4 min-w-4 text-[9px] px-1">{unreadCounts.instagram}</Chip>)}</span>} />
+          <Tab key="whatsapp" title={<span className="text-xs flex items-center gap-1.5"><MessageCircle size={14} />WhatsApp {unreadCounts.whatsapp > 0 && (<Chip size="sm" color="success" variant="solid" className="h-4 min-w-4 text-[9px] px-1">{unreadCounts.whatsapp}</Chip>)}</span>} />
           <Tab key="fb-comments" title={<span className="text-xs flex items-center gap-1.5"><Facebook size={14} />Comentarios FB</span>} />
           <Tab key="ig-comments" title={<span className="text-xs flex items-center gap-1.5"><Instagram size={14} />Comentarios IG</span>} />
         </Tabs>
@@ -1707,8 +1784,8 @@ export default function ContactCenterPage() {
       {/* Content Area */}
       <div className="flex-1 min-h-0 flex gap-0 overflow-hidden p-3 pt-2.5">
       {/* Conversation List / Posts List */}
-      <div className="w-[360px] min-h-0 border border-divider/70 flex flex-col bg-content1/95 rounded-l-3xl shadow-sm overflow-hidden">
-        <div className="shrink-0 p-4 border-b border-divider/70 space-y-3 bg-content1/90">
+      <div className={`w-[360px] min-h-0 border flex flex-col rounded-l-3xl shadow-sm overflow-hidden transition-colors duration-300 ${tabTheme.panel}`}>
+        <div className={`shrink-0 p-4 border-b space-y-3 transition-colors duration-300 ${tabTheme.header}`}>
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-sm font-bold">
@@ -1729,7 +1806,7 @@ export default function ContactCenterPage() {
                   onPress={syncInstagramMessages}
                   title="Sincronizar Instagram DMs"
                 >
-                  <Instagram size={15} className="text-pink-500" />
+                  <Instagram size={15} className="text-foreground" />
                 </Button>
               )}
               <Button
@@ -1893,10 +1970,10 @@ export default function ContactCenterPage() {
               filteredConversations.map((conv) => (
               <button
                 key={conv._id}
-                className={`w-full text-left p-3.5 flex items-center gap-3 transition-all border-b border-divider/60 group ${
+                className={`w-full text-left p-3.5 flex items-center gap-3 transition-all border-b border-divider/60 group border-l-4 ${
                   selectedConv?._id === conv._id
-                    ? "bg-primary/10 border-l-4 border-l-primary shadow-sm"
-                    : "hover:bg-default-100/80 border-l-4 border-l-transparent"
+                    ? tabTheme.selected
+                    : tabTheme.hover
                 }`}
                 onClick={() => selectConversation(conv)}
               >
@@ -2236,9 +2313,9 @@ export default function ContactCenterPage() {
           </div>
         ) : !selectedConv ? (
           // Live Chat Empty State
-          <div className="flex-1 flex flex-col items-center justify-center text-center px-8 bg-gradient-to-br from-content1 via-default-50/60 to-primary/5">
-            <div className="w-24 h-24 rounded-3xl bg-primary/10 flex items-center justify-center mb-5 shadow-sm border border-primary/10">
-              <MessagesSquare className="text-primary" size={40} />
+          <div className={`flex-1 flex flex-col items-center justify-center text-center px-8 bg-gradient-to-br ${tabTheme.shell}`}>
+            <div className="w-24 h-24 rounded-3xl bg-content1/70 flex items-center justify-center mb-5 shadow-sm border border-current/10">
+              <MessagesSquare className={tabTheme.icon} size={40} />
             </div>
             <h3 className="text-xl font-bold mb-2">Selecciona una conversación</h3>
             <p className="text-default-500 text-sm max-w-md">
