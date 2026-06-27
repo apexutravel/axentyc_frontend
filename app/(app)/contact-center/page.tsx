@@ -438,7 +438,7 @@ export default function ContactCenterPage() {
     try {
       const params = new URLSearchParams();
       // Load web_chat, facebook, and instagram conversations
-      params.set("channels", "web_chat,facebook,instagram");
+      params.set("channels", "web_chat,facebook,instagram,whatsapp");
       if (statusFilter !== "all") params.set("status", statusFilter);
 
       const data = await api.get<Conversation[]>(

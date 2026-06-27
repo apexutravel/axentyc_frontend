@@ -172,7 +172,22 @@ export function TopNavbar() {
                           }`}
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-foreground truncate">{notification.title}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs font-semibold text-foreground truncate">{notification.title}</p>
+                            {notification.platform && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-default-200 text-default-700 flex-shrink-0">
+                                {(() => {
+                                  const p = notification.platform.toLowerCase();
+                                  if (p.includes('facebook') || p.includes('messenger')) return 'Messenger';
+                                  if (p.includes('instagram') || p.includes('ig')) return 'Instagram';
+                                  if (p.includes('whatsapp') || p.includes('wa')) return 'WhatsApp';
+                                  if (p.includes('email') || notification.type === 'email') return 'Email';
+                                  if (p.includes('web') || p.includes('widget')) return 'Web';
+                                  return p || '';
+                                })()}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-default-600 truncate mt-0.5">{notification.message}</p>
                           <p className="text-[10px] text-default-400 mt-1">
                             {formatRelativeTime(notification.createdAt)}

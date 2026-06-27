@@ -16,7 +16,7 @@ export function useUnreadConversations() {
   const fetchUnreadCount = async () => {
     try {
       const params = new URLSearchParams();
-      params.set('channel', 'web_chat');
+      params.set('channels', 'web_chat,facebook,instagram,whatsapp');
       
       const data = await api.get<Conversation[]>(
         `${API_ENDPOINTS.conversations.list}?${params.toString()}`

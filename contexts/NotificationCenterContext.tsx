@@ -15,6 +15,7 @@ export interface ChatNotification {
   title: string;
   message: string;
   senderName?: string;
+  platform?: string;
   createdAt: string;
   read: boolean;
 }
@@ -275,6 +276,49 @@ export function NotificationCenterProvider({ children }: { children: React.React
     }
   }, [tenant?.id, user?.tenantId, setTenantId]);
 
+  // Load unread conversations on mount to create notifications for missed messages
+  useEffect(() => {
+    if (!tenant?.id) return;
+    
+    const loadUnreadConversations = async () => {
+      try {
+        const params = new URLSearchParams();
+        params.set("channels", "web_chat,facebook,instagram,whatsapp");
+        const data = await api.get(`/conversations?${params.toString()}`);
+        const conversations = ((data as any)?.data ?? data) as any[];
+        
+        if (!Array.isArray(conversations)) return;
+        
+        const unreadConversations = conversations.filter((c) => (c?.unreadCount || 0) > 0);
+        
+        unreadConversations.forEach((conv) => {
+          const lastMsg = conv?.lastMessage || {};
+          const name = conv?.contact?.name || lastMsg?.senderName || "Visitante";
+          const content = (lastMsg?.content || conv?.subject || "").toString();
+          const platform = (conv?.channel || "").toLowerCase();
+          
+          const notification: ChatNotification = {
+            id: `unread:${conv._id}`,
+            conversationId: conv._id,
+            type: "message",
+            title: `Nuevo mensaje de ${name}`,
+            message: content.substring(0, 100),
+            senderName: name,
+            platform: platform || undefined,
+            createdAt: lastMsg?.createdAt || conv?.updatedAt || new Date().toISOString(),
+            read: false,
+          };
+          
+          pushNotification(notification);
+        });
+      } catch (error) {
+        console.error("[Notification] Error loading unread conversations:", error);
+      }
+    };
+    
+    loadUnreadConversations();
+  }, [tenant?.id, pushNotification]);
+
   // Register FCM token and listen to foreground messages
   useEffect(() => {
     if (!tenant?.id) return;
@@ -358,6 +402,7 @@ export function NotificationCenterProvider({ children }: { children: React.React
         title: `Nuevo mensaje de ${senderName}`,
         message: message.content.substring(0, 100),
         senderName,
+        platform: message?.metadata?.platform || (data?.channel || '').toLowerCase() || undefined,
         createdAt: message.createdAt || new Date().toISOString(),
         read: false,
       };
