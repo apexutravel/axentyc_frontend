@@ -1044,9 +1044,9 @@ export default function ContactCenterPage() {
         setConversations((prev) => {
           const exists = prev.find((c) => c._id === data._id);
           if (!exists) {
-            // Conversation not in list yet, trigger a reload
-            loadConversations();
-            return prev;
+            // Conversation not in list yet, add it immediately
+            console.log("[LiveChat] Adding new conversation from conversation.updated event");
+            return [data, ...prev];
           }
           // Update existing conversation in list
           return prev.map((c) =>
