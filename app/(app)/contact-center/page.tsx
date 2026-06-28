@@ -357,6 +357,7 @@ export default function ContactCenterPage() {
   });
   const [savingContact, setSavingContact] = useState(false);
   const conversationIdFromQuery = searchParams.get("conversationId");
+  const tabFromQuery = searchParams.get("tab");
 
   // Modals
   const assignModal = useDisclosure();
@@ -900,11 +901,16 @@ export default function ContactCenterPage() {
     if (selectedConv?._id === conversationIdFromQuery) return;
     const targetConversation = conversations.find((conv) => conv._id === conversationIdFromQuery);
     if (targetConversation) {
+      // Set tab from URL if provided
+      if (tabFromQuery) {
+        setActiveTab(tabFromQuery);
+      }
       selectConversation(targetConversation);
-      // Clear conversationId from URL to allow normal navigation afterwards
-      router.replace('/contact-center', { scroll: false });
+      // Clear conversationId from URL but preserve tab
+      const tabParam = tabFromQuery ? `?tab=${tabFromQuery}` : '';
+      router.replace(`/contact-center${tabParam}`, { scroll: false });
     }
-  }, [conversationIdFromQuery, conversations, selectedConv?._id, selectConversation, router]);
+  }, [conversationIdFromQuery, tabFromQuery, conversations, selectedConv?._id, selectConversation, router]);
 
   // Mark messages as read when conversation is actively being viewed
   useEffect(() => {

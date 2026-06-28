@@ -199,7 +199,12 @@ export function TopNavbar() {
                           if (notification.type === "email") {
                             router.push("/inbox");
                           } else if (notification.conversationId) {
-                            router.push(`/contact-center?conversationId=${notification.conversationId}`);
+                            const platform = notification.platform?.toLowerCase() || "";
+                            let tab = "all";
+                            if (platform.includes("instagram") || platform.includes("ig")) tab = "instagram";
+                            else if (platform.includes("facebook") || platform.includes("messenger")) tab = "messenger";
+                            else if (platform.includes("whatsapp") || platform.includes("wa")) tab = "whatsapp";
+                            router.push(`/contact-center?conversationId=${notification.conversationId}&tab=${tab}`);
                           } else {
                             router.push("/contact-center");
                           }
