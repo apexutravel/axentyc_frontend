@@ -17,6 +17,7 @@ export interface ChatNotification {
   message: string;
   senderName?: string;
   platform?: string;
+  pageName?: string;
   createdAt: string;
   read: boolean;
 }
@@ -307,7 +308,8 @@ export function NotificationCenterProvider({ children }: { children: React.React
             "Visitante";
           const content = (lastMsg?.content || conv?.subject || "").toString();
           const platform = (conv?.channel || "").toLowerCase();
-          
+          const pageName = conv?.metadata?.pageName;
+
           const notification: ChatNotification = {
             id: `unread:${conv._id}`,
             conversationId: conv._id,
@@ -316,10 +318,11 @@ export function NotificationCenterProvider({ children }: { children: React.React
             message: content.substring(0, 100),
             senderName: name,
             platform: platform || undefined,
+            pageName: pageName,
             createdAt: lastMsg?.createdAt || conv?.updatedAt || new Date().toISOString(),
             read: false,
           };
-          
+
           console.log("[Notification] Creating notification for:", conv._id);
           pushNotification(notification);
         });
@@ -419,6 +422,7 @@ export function NotificationCenterProvider({ children }: { children: React.React
         message: message.content.substring(0, 100),
         senderName,
         platform: message?.metadata?.platform || (data?.channel || '').toLowerCase() || undefined,
+        pageName: data?.pageName || message?.metadata?.pageName,
         createdAt: message.createdAt || new Date().toISOString(),
         read: false,
       };

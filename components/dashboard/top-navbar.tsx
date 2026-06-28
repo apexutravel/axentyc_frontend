@@ -22,14 +22,14 @@ function formatRelativeTime(dateStr: string) {
 }
 
 function getPlatformIcon(platform?: string) {
-  if (!platform) return <Globe size={16} className="text-default-500" />;
+  if (!platform) return <Globe size={28} className="text-default-500" />;
   const p = platform.toLowerCase();
-  if (p.includes('facebook') || p.includes('messenger')) return <Facebook size={16} className="text-blue-500" />;
-  if (p.includes('instagram') || p.includes('ig')) return <Instagram size={16} className="text-pink-500" />;
-  if (p.includes('whatsapp') || p.includes('wa')) return <MessageCircle size={16} className="text-green-500" />;
-  if (p.includes('email')) return <Mail size={16} className="text-orange-500" />;
-  if (p.includes('web') || p.includes('widget')) return <Globe size={16} className="text-default-500" />;
-  return <Globe size={16} className="text-default-500" />;
+  if (p.includes('facebook') || p.includes('messenger')) return <Facebook size={28} className="text-blue-500" />;
+  if (p.includes('instagram') || p.includes('ig')) return <Instagram size={28} className="text-pink-500" />;
+  if (p.includes('whatsapp') || p.includes('wa')) return <MessageCircle size={28} className="text-green-500" />;
+  if (p.includes('email')) return <Mail size={28} className="text-orange-500" />;
+  if (p.includes('web') || p.includes('widget')) return <Globe size={28} className="text-default-500" />;
+  return <Globe size={28} className="text-default-500" />;
 }
 
 export function TopNavbar() {
@@ -201,7 +201,7 @@ export function TopNavbar() {
                         }
                         onClick={() => markAsRead(notification.id)}
                       >
-                        <div className="relative flex-shrink-0">
+                        <div className="relative flex-shrink-0 flex items-center justify-center h-12">
                           {getPlatformIcon(notification.platform)}
                           {(notification as any).messageCount > 1 && (
                             <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-danger text-white text-[9px] font-bold leading-none">
@@ -209,7 +209,7 @@ export function TopNavbar() {
                             </span>
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 pl-3">
                           <div className="flex items-center justify-between gap-2">
                             <p className="text-xs font-semibold text-foreground truncate">{notification.senderName || notification.title}</p>
                             <p className="text-[10px] text-default-400 flex-shrink-0">
