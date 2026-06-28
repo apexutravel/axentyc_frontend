@@ -63,7 +63,7 @@ messaging.onBackgroundMessage((payload) => {
     try {
       const hasVisibleLive = (clientsArr || []).some((c) => {
         const url = c?.url || '';
-        const isLiveChat = url.includes('/live-chat');
+        const isLiveChat = url.includes('/contact-center');
         const isVisible = (typeof c.visibilityState === 'string') ? (c.visibilityState === 'visible') : true;
         return isLiveChat && isVisible;
       });
@@ -100,9 +100,9 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   
   const conversationId = event.notification.data?.conversationId;
-  const url = conversationId 
-    ? `/live-chat?conversationId=${conversationId}`
-    : '/live-chat';
+  const url = conversationId
+    ? `/contact-center?conversationId=${conversationId}`
+    : '/contact-center';
   
   event.waitUntil(
     clients.openWindow(url)

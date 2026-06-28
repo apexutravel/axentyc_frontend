@@ -228,43 +228,6 @@ function MessageStatus({ status }: { status: string }) {
 }
 
 function getTabTheme(tab: string) {
-  const key = (tab || "all").toLowerCase();
-  if (key === "instagram" || key === "ig-comments") {
-    return {
-      shell: "from-pink-50/70 via-purple-50/50 to-orange-50/40 dark:from-pink-950/20 dark:via-purple-950/20 dark:to-orange-950/10",
-      panel: "border-pink-200/60 dark:border-pink-800/40 bg-gradient-to-b from-pink-50/80 via-content1 to-purple-50/50 dark:from-pink-950/15 dark:via-content1 dark:to-purple-950/10",
-      header: "bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-orange-400/10 border-pink-200/60 dark:border-pink-800/40",
-      selected: "bg-gradient-to-r from-pink-500/15 via-purple-500/10 to-orange-400/10 border-l-pink-500 shadow-sm",
-      hover: "hover:bg-pink-50/80 dark:hover:bg-pink-950/20 border-l-transparent",
-      cursor: "rounded-lg bg-gradient-to-r from-pink-500 via-purple-500 to-orange-400",
-      badge: "secondary" as const,
-      icon: "text-pink-500",
-    };
-  }
-  if (key === "whatsapp") {
-    return {
-      shell: "from-green-50/70 via-emerald-50/50 to-teal-50/40 dark:from-green-950/20 dark:via-emerald-950/20 dark:to-teal-950/10",
-      panel: "border-green-200/60 dark:border-green-800/40 bg-gradient-to-b from-green-50/80 via-content1 to-emerald-50/50 dark:from-green-950/15 dark:via-content1 dark:to-emerald-950/10",
-      header: "bg-gradient-to-r from-green-500/10 via-emerald-500/10 to-teal-400/10 border-green-200/60 dark:border-green-800/40",
-      selected: "bg-gradient-to-r from-green-500/15 via-emerald-500/10 to-teal-400/10 border-l-green-500 shadow-sm",
-      hover: "hover:bg-green-50/80 dark:hover:bg-green-950/20 border-l-transparent",
-      cursor: "rounded-lg bg-gradient-to-r from-green-500 via-emerald-500 to-teal-400",
-      badge: "success" as const,
-      icon: "text-green-500",
-    };
-  }
-  if (key === "messenger" || key === "fb-comments") {
-    return {
-      shell: "from-blue-50/70 via-sky-50/50 to-indigo-50/40 dark:from-blue-950/20 dark:via-sky-950/20 dark:to-indigo-950/10",
-      panel: "border-blue-200/60 dark:border-blue-800/40 bg-gradient-to-b from-blue-50/80 via-content1 to-sky-50/50 dark:from-blue-950/15 dark:via-content1 dark:to-sky-950/10",
-      header: "bg-gradient-to-r from-blue-600/10 via-sky-500/10 to-indigo-500/10 border-blue-200/60 dark:border-blue-800/40",
-      selected: "bg-gradient-to-r from-blue-600/15 via-sky-500/10 to-indigo-500/10 border-l-blue-600 shadow-sm",
-      hover: "hover:bg-blue-50/80 dark:hover:bg-blue-950/20 border-l-transparent",
-      cursor: "rounded-lg bg-gradient-to-r from-blue-600 via-sky-500 to-indigo-500",
-      badge: "primary" as const,
-      icon: "text-blue-600",
-    };
-  }
   return {
     shell: "from-content1 via-default-50/60 to-primary/5 dark:from-content1 dark:via-default-100/10 dark:to-primary/10",
     panel: "border-divider/70 bg-content1/95",
@@ -938,8 +901,10 @@ export default function ContactCenterPage() {
     const targetConversation = conversations.find((conv) => conv._id === conversationIdFromQuery);
     if (targetConversation) {
       selectConversation(targetConversation);
+      // Clear conversationId from URL to allow normal navigation afterwards
+      router.replace('/contact-center', { scroll: false });
     }
-  }, [conversationIdFromQuery, conversations, selectedConv?._id, selectConversation]);
+  }, [conversationIdFromQuery, conversations, selectedConv?._id, selectConversation, router]);
 
   // Mark messages as read when conversation is actively being viewed
   useEffect(() => {

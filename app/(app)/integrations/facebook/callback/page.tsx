@@ -252,7 +252,7 @@ export default function FacebookCallbackPage() {
               </Button>
               <Button
                 color="primary"
-                onPress={() => router.push("/live-chat")}
+                onPress={() => router.push("/contact-center")}
               >
                 Ir a Contact Center
               </Button>

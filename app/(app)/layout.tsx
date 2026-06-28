@@ -18,7 +18,7 @@ export default function DashboardLayout({
 
   const sidebarItemsWithBadge = useMemo(() => {
     return siteConfig.sidebarItems.map((item) => {
-      if (item.href === "/live-chat" || item.href === "/contact-center") {
+      if (item.href === "/contact-center") {
         return { ...item, badge: unreadCount };
       }
       if (item.href === "/inbox") {

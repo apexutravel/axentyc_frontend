@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNotificationCenter, NotificationType, ChatNotification } from "@/contexts/NotificationCenterContext";
 import { useSocket } from "@/hooks/useSocket";
 import { useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 
 function formatRelativeTime(dateStr: string) {
   const diffMs = Date.now() - new Date(dateStr).getTime();
@@ -33,6 +34,7 @@ function getPlatformIcon(platform?: string) {
 }
 
 export function TopNavbar() {
+  const router = useRouter();
   const { user, tenant, logout } = useAuth();
   const { isConnected, tenantJoined } = useSocket();
   const {
@@ -187,19 +189,21 @@ export function TopNavbar() {
                 ) : (
                   <div className="divide-y divide-divider pb-2">
                     {groupedNotifications.map((notification) => (
-                      <a
+                      <button
                         key={notification.id}
-                        className={`flex items-start gap-3 px-3 py-3 w-full transition-colors hover:bg-default-100 ${
+                        className={`flex items-start gap-3 px-3 py-3 w-full transition-colors hover:bg-default-100 text-left ${
                           !notification.read ? "bg-primary/5" : ""
                         }`}
-                        href={
-                          notification.type === "email"
-                            ? "/inbox"
-                            : notification.conversationId
-                              ? `/live-chat?conversationId=${notification.conversationId}`
-                              : "/live-chat"
-                        }
-                        onClick={() => markAsRead(notification.id)}
+                        onClick={() => {
+                          markAsRead(notification.id);
+                          if (notification.type === "email") {
+                            router.push("/inbox");
+                          } else if (notification.conversationId) {
+                            router.push(`/contact-center?conversationId=${notification.conversationId}`);
+                          } else {
+                            router.push("/contact-center");
+                          }
+                        }}
                       >
                         <div className="relative flex-shrink-0 flex items-center justify-center h-12">
                           {getPlatformIcon(notification.platform)}
@@ -216,9 +220,12 @@ export function TopNavbar() {
                               {formatRelativeTime(notification.createdAt)}
                             </p>
                           </div>
+                          {notification.pageName && (
+                            <p className="text-[10px] text-default-500 truncate">{notification.pageName}</p>
+                          )}
                           <p className="text-xs text-default-600 truncate mt-0.5">{notification.message}</p>
                         </div>
-                      </a>
+                      </button>
                     ))}
                   </div>
                 )}
