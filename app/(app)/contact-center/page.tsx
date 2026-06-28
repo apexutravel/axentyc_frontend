@@ -1987,7 +1987,7 @@ export default function ContactCenterPage() {
                 <div className="relative flex-shrink-0">
                   <Avatar
                     color="primary"
-                    name={conv.contactId?.name?.substring(0, 2).toUpperCase() || "V"}
+                    name={((conv.contactId?.name || (conv.contactId as any)?.socialProfiles?.instagram?.username || (conv.contactId as any)?.socialProfiles?.facebook?.username || "V")).substring(0, 2).toUpperCase()}
                     size="md"
                     className="shadow-sm"
                   />
@@ -1998,7 +1998,7 @@ export default function ContactCenterPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold truncate group-hover:text-primary transition-colors">
-                      {conv.contactId?.name || "Visitor"}
+                      {conv.contactId?.name || (conv.contactId as any)?.socialProfiles?.instagram?.username || (conv.contactId as any)?.socialProfiles?.facebook?.username || "Visitor"}
                     </span>
                     <span className="text-xs text-default-400 flex-shrink-0">
                       {conv.lastMessageAt ? formatTime(conv.lastMessageAt) : ""}

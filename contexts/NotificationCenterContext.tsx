@@ -5,6 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useAuth } from "@/contexts/AuthContext";
 import { useSocket } from "@/hooks/useSocket";
 import { api } from "@/lib/api";
+import { API_ENDPOINTS } from "@/config/api";
 
 export type NotificationType = "message" | "conversation" | "email" | "system";
 
@@ -282,18 +283,28 @@ export function NotificationCenterProvider({ children }: { children: React.React
     
     const loadUnreadConversations = async () => {
       try {
+        console.log("[Notification] Loading unread conversations...");
         const params = new URLSearchParams();
         params.set("channels", "web_chat,facebook,instagram,whatsapp");
-        const data = await api.get(`/conversations?${params.toString()}`);
+        const data = await api.get(`${API_ENDPOINTS.conversations.list}?${params.toString()}`);
         const conversations = ((data as any)?.data ?? data) as any[];
+        
+        console.log("[Notification] Conversations loaded:", conversations.length);
         
         if (!Array.isArray(conversations)) return;
         
         const unreadConversations = conversations.filter((c) => (c?.unreadCount || 0) > 0);
+        console.log("[Notification] Unread conversations:", unreadConversations.length);
         
         unreadConversations.forEach((conv) => {
           const lastMsg = conv?.lastMessage || {};
-          const name = conv?.contact?.name || lastMsg?.senderName || "Visitante";
+          const name =
+            conv?.contactId?.name ||
+            conv?.contact?.name ||
+            conv?.contactId?.socialProfiles?.instagram?.username ||
+            conv?.contactId?.socialProfiles?.facebook?.username ||
+            lastMsg?.senderName ||
+            "Visitante";
           const content = (lastMsg?.content || conv?.subject || "").toString();
           const platform = (conv?.channel || "").toLowerCase();
           
@@ -309,6 +320,7 @@ export function NotificationCenterProvider({ children }: { children: React.React
             read: false,
           };
           
+          console.log("[Notification] Creating notification for:", conv._id);
           pushNotification(notification);
         });
       } catch (error) {
@@ -386,8 +398,12 @@ export function NotificationCenterProvider({ children }: { children: React.React
       if (message?.metadata?.isComment) return;
       
       // Use contact name if available, otherwise use senderName from message
-      const contactName = data?.contactId?.name || data?.contact?.name;
-      const senderName = contactName || message?.senderName || "Visitante";
+      const contactName =
+        data?.contactId?.name ||
+        data?.contactId?.username ||
+        data?.contact?.name ||
+        message?.senderName;
+      const senderName = contactName || "Visitante";
       
       if (!conversationId || !message?.content) {
         console.log("[Notification] Skipped - missing conversationId or content");

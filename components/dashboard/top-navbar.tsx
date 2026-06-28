@@ -5,10 +5,11 @@ import { Avatar } from "@heroui/avatar";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
 import { Popover, PopoverTrigger, PopoverContent } from "@heroui/popover";
 import { ThemeSwitch } from "@/components/theme-switch";
-import { Search, Bell, Wifi, WifiOff } from "lucide-react";
+import { Search, Bell, Wifi, WifiOff, Facebook, Instagram, MessageCircle, Mail, Globe } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNotificationCenter, NotificationType } from "@/contexts/NotificationCenterContext";
+import { useNotificationCenter, NotificationType, ChatNotification } from "@/contexts/NotificationCenterContext";
 import { useSocket } from "@/hooks/useSocket";
+import { useEffect, useMemo } from "react";
 
 function formatRelativeTime(dateStr: string) {
   const diffMs = Date.now() - new Date(dateStr).getTime();
@@ -18,6 +19,17 @@ function formatRelativeTime(dateStr: string) {
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours} h`;
   return new Date(dateStr).toLocaleDateString("es", { day: "numeric", month: "short" });
+}
+
+function getPlatformIcon(platform?: string) {
+  if (!platform) return <Globe size={16} className="text-default-500" />;
+  const p = platform.toLowerCase();
+  if (p.includes('facebook') || p.includes('messenger')) return <Facebook size={16} className="text-blue-500" />;
+  if (p.includes('instagram') || p.includes('ig')) return <Instagram size={16} className="text-pink-500" />;
+  if (p.includes('whatsapp') || p.includes('wa')) return <MessageCircle size={16} className="text-green-500" />;
+  if (p.includes('email')) return <Mail size={16} className="text-orange-500" />;
+  if (p.includes('web') || p.includes('widget')) return <Globe size={16} className="text-default-500" />;
+  return <Globe size={16} className="text-default-500" />;
 }
 
 export function TopNavbar() {
@@ -34,6 +46,29 @@ export function TopNavbar() {
     clearNotifications,
   } = useNotificationCenter();
   const visibleNotifications = filteredNotifications.slice(0, 8);
+
+  // Group notifications by conversation to count messages per user
+  const groupedNotifications = useMemo(() => {
+    const groups = new Map<string, { notifications: ChatNotification[]; count: number }>();
+    
+    filteredNotifications.forEach((notification) => {
+      const key = notification.conversationId || notification.id;
+      if (!groups.has(key)) {
+        groups.set(key, { notifications: [], count: 0 });
+      }
+      const group = groups.get(key)!;
+      group.notifications.push(notification);
+      group.count++;
+    });
+    
+    return Array.from(groups.values()).map((group) => {
+      const latest = group.notifications[group.notifications.length - 1];
+      return {
+        ...latest,
+        messageCount: group.count,
+      };
+    }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 8);
+  }, [filteredNotifications]);
 
   const filterTabs: { key: NotificationType | "all"; label: string }[] = [
     { key: "all", label: "Todos" },
@@ -145,16 +180,16 @@ export function TopNavbar() {
 
               {/* Notifications List */}
               <div className="max-h-[380px] overflow-y-auto">
-                {visibleNotifications.length === 0 ? (
+                {groupedNotifications.length === 0 ? (
                   <div className="py-8 px-3">
                     <p className="text-sm text-default-500 text-center">No hay notificaciones nuevas</p>
                   </div>
                 ) : (
                   <div className="divide-y divide-divider pb-2">
-                    {visibleNotifications.map((notification) => (
+                    {groupedNotifications.map((notification) => (
                       <a
                         key={notification.id}
-                        className={`flex items-start gap-2.5 px-3 py-2.5 w-full transition-colors hover:bg-default-100 ${
+                        className={`flex items-start gap-3 px-3 py-3 w-full transition-colors hover:bg-default-100 ${
                           !notification.read ? "bg-primary/5" : ""
                         }`}
                         href={
@@ -166,32 +201,22 @@ export function TopNavbar() {
                         }
                         onClick={() => markAsRead(notification.id)}
                       >
-                        <span
-                          className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 ${
-                            notification.read ? "bg-default-300" : "bg-primary"
-                          }`}
-                        />
+                        <div className="relative flex-shrink-0">
+                          {getPlatformIcon(notification.platform)}
+                          {(notification as any).messageCount > 1 && (
+                            <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-danger text-white text-[9px] font-bold leading-none">
+                              {(notification as any).messageCount}
+                            </span>
+                          )}
+                        </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-xs font-semibold text-foreground truncate">{notification.title}</p>
-                            {notification.platform && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-default-200 text-default-700 flex-shrink-0">
-                                {(() => {
-                                  const p = notification.platform.toLowerCase();
-                                  if (p.includes('facebook') || p.includes('messenger')) return 'Messenger';
-                                  if (p.includes('instagram') || p.includes('ig')) return 'Instagram';
-                                  if (p.includes('whatsapp') || p.includes('wa')) return 'WhatsApp';
-                                  if (p.includes('email') || notification.type === 'email') return 'Email';
-                                  if (p.includes('web') || p.includes('widget')) return 'Web';
-                                  return p || '';
-                                })()}
-                              </span>
-                            )}
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-xs font-semibold text-foreground truncate">{notification.senderName || notification.title}</p>
+                            <p className="text-[10px] text-default-400 flex-shrink-0">
+                              {formatRelativeTime(notification.createdAt)}
+                            </p>
                           </div>
                           <p className="text-xs text-default-600 truncate mt-0.5">{notification.message}</p>
-                          <p className="text-[10px] text-default-400 mt-1">
-                            {formatRelativeTime(notification.createdAt)}
-                          </p>
                         </div>
                       </a>
                     ))}
