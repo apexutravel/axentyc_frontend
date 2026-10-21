@@ -11,6 +11,7 @@ import { addToast } from "@heroui/toast";
 import { CheckCircle2, XCircle, Facebook, Users, ArrowLeft, ExternalLink, Instagram } from "lucide-react";
 import { api } from "@/lib/api";
 import { API_ENDPOINTS } from "@/config/api";
+import { BillingService } from "@/lib/billing";
 
 interface FacebookPage {
   id: string;
@@ -40,6 +41,8 @@ export default function FacebookCallbackPage() {
   const [error, setError] = useState("");
   const [connectingPageId, setConnectingPageId] = useState<string | null>(null);
   const [selectionToken, setSelectionToken] = useState("");
+  const [connectedAssetsUsed, setConnectedAssetsUsed] = useState<number | null>(null);
+  const [connectedAssetsLimit, setConnectedAssetsLimit] = useState<number | null>(null);
 
   useEffect(() => {
     const code = searchParams.get("code");
@@ -60,21 +63,27 @@ export default function FacebookCallbackPage() {
     if (processedCodes.has(code)) return;
     processedCodes.add(code);
 
-    exchangeToken(code);
+    exchangeToken(code, searchParams.get("state") || undefined);
   }, [searchParams]);
 
-  const exchangeToken = async (code: string) => {
+  const exchangeToken = async (code: string, state?: string) => {
     try {
       const redirectUri = `${window.location.origin}/integrations/facebook/callback`;
       console.log('[FB Callback] Exchanging code, redirectUri:', redirectUri);
 
-      const res = await api.post<any>(API_ENDPOINTS.integrations.facebook.exchangeToken, {
-        code,
-        redirectUri,
-      });
+      const [res, billingRes] = await Promise.all([
+        api.post<any>(API_ENDPOINTS.integrations.facebook.exchangeToken, {
+          code,
+          redirectUri,
+          state,
+        }),
+        BillingService.subscription().catch(() => null),
+      ]);
 
       const data = (res as any)?.data ?? res;
-      console.log('[FB Callback] Exchange response:', JSON.stringify(data));
+      const billingData = (billingRes as any)?.data ?? billingRes;
+      setConnectedAssetsUsed(billingData?.usage?.connectedAssets?.total ?? null);
+      setConnectedAssetsLimit(billingData?.plan?.limits?.maxConnectedAssets ?? null);
 
       if (data.pages && data.pages.length > 0 && data.selectionToken) {
         setSelectionToken(data.selectionToken);
@@ -93,14 +102,22 @@ export default function FacebookCallbackPage() {
         );
       }
     } catch (e: any) {
-      const detail = e?.response?.data || e?.message || 'Error desconocido';
+      const detail = e?.response?.data?.message || e?.message || 'Error desconocido';
       console.error('[FB Callback] Exchange error:', detail);
       setStatus("error");
-      setError(typeof detail === 'object' ? JSON.stringify(detail) : detail);
+      setError(typeof detail === 'string' ? detail : JSON.stringify(detail));
     }
   };
 
   const connectPage = async (page: FacebookPage) => {
+    const requiredAssets = getRequiredAssets(page);
+    const remainingAssets = getRemainingAssets();
+    if (remainingAssets != null && requiredAssets > remainingAssets) {
+      setError(`Tu plan solo tiene ${remainingAssets} activo(s) disponible(s). Esta selección requiere ${requiredAssets}.`);
+      setStatus("error");
+      return;
+    }
+
     setConnectingPageId(page.id);
     setStatus("connecting");
     try {
@@ -113,10 +130,16 @@ export default function FacebookCallbackPage() {
       addToast({ title: `Página "${page.name}" conectada exitosamente`, color: "success" });
     } catch (e: any) {
       setStatus("error");
-      setError(e?.response?.data?.message || "Error al conectar la página");
+      setError(e?.response?.data?.message || e?.message || "Error al conectar la página");
     } finally {
       setConnectingPageId(null);
     }
+  };
+
+  const getRequiredAssets = (page: FacebookPage) => 1 + (page.instagramAccount && page.instagramLinked ? 1 : 0);
+  const getRemainingAssets = () => {
+    if (connectedAssetsUsed == null || connectedAssetsLimit == null) return null;
+    return Math.max(connectedAssetsLimit - connectedAssetsUsed, 0);
   };
 
   return (
@@ -148,18 +171,29 @@ export default function FacebookCallbackPage() {
           <p className="text-sm text-default-500">
             Se encontraron <strong>{pages.length}</strong> página(s). Selecciona cuál conectar:
           </p>
-          {pages.map((page) => (
-            <Card key={page.id} className="border border-divider hover:border-primary/50 transition-colors">
-              <CardBody className="flex-row items-center justify-between gap-4 py-4">
-                <div className="flex items-center gap-3">
-                  {page.picture ? (
-                    <Avatar src={page.picture} size="md" radius="lg" />
-                  ) : (
-                    <Avatar name={page.name} size="md" radius="lg" color="primary" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold">{page.name}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
+          {connectedAssetsLimit != null && connectedAssetsUsed != null && (
+            <div className="rounded-xl border border-divider bg-content2/60 px-4 py-3 text-sm text-default-500">
+              Tu plan permite <strong className="text-foreground">{connectedAssetsLimit}</strong> canales conectados. Ya usaste <strong className="text-foreground">{connectedAssetsUsed}</strong> y te quedan <strong className="text-foreground">{getRemainingAssets()}</strong>.
+            </div>
+          )}
+          {pages.map((page) => {
+            const requiredAssets = getRequiredAssets(page);
+            const remainingAssets = getRemainingAssets();
+            const exceedsLimit = remainingAssets != null && requiredAssets > remainingAssets;
+
+            return (
+            <Card key={page.id} className={`border transition-colors ${exceedsLimit ? "border-warning/40 opacity-70" : "border-divider hover:border-primary/50"}`}>
+              <CardBody className="flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3">
+                    {page.picture ? (
+                      <Avatar src={page.picture} size="md" radius="lg" />
+                    ) : (
+                      <Avatar name={page.name} size="md" radius="lg" color="primary" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold">{page.name}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
                       {page.category && (
                         <Chip size="sm" variant="flat" className="text-[10px]">{page.category}</Chip>
                       )}
@@ -168,8 +202,8 @@ export default function FacebookCallbackPage() {
                           <Users size={10} /> {page.fanCount.toLocaleString()}
                         </span>
                       )}
-                    </div>
-                    {page.instagramAccount && page.instagramLinked && (
+                      </div>
+                      {page.instagramAccount && page.instagramLinked && (
                       <div className="flex items-center gap-1.5 mt-1.5 text-xs text-default-500">
                         <Instagram size={12} className="text-pink-500" />
                         <span className="font-medium">@{page.instagramAccount.username}</span>
@@ -178,14 +212,14 @@ export default function FacebookCallbackPage() {
                         )}
                         <Chip size="sm" color="success" variant="flat" className="ml-1 text-[9px] h-4">IG conectado</Chip>
                       </div>
-                    )}
-                    {page.hasInstagramBusinessAccount && !page.instagramLinked && (
+                      )}
+                      {page.hasInstagramBusinessAccount && !page.instagramLinked && (
                       <div className="flex items-center gap-1.5 mt-1.5 text-xs text-warning-500">
                         <Instagram size={12} />
                         <span>Instagram detectado pero sin acceso{page.instagramError ? `: ${page.instagramError}` : ''}</span>
                       </div>
-                    )}
-                    {!page.hasInstagramBusinessAccount && (
+                      )}
+                      {!page.hasInstagramBusinessAccount && (
                       <div className="flex items-center gap-1.5 mt-1.5 text-xs text-default-400">
                         <Instagram size={12} />
                         <span>Sin Instagram vinculado</span>
@@ -199,7 +233,14 @@ export default function FacebookCallbackPage() {
                           Cómo vincular
                         </a>
                       </div>
-                    )}
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-default-400">
+                    <Chip size="sm" variant="flat" color={exceedsLimit ? "warning" : "default"}>
+                      Consume {requiredAssets} activo{requiredAssets > 1 ? "s" : ""}
+                    </Chip>
+                    <span>Facebook Page{requiredAssets > 1 ? " + Instagram" : ""}</span>
                   </div>
                 </div>
                 <Button
@@ -207,13 +248,14 @@ export default function FacebookCallbackPage() {
                   size="sm"
                   onPress={() => connectPage(page)}
                   isLoading={connectingPageId === page.id}
-                  isDisabled={connectingPageId !== null}
+                  isDisabled={connectingPageId !== null || exceedsLimit}
                 >
-                  Conectar
+                  {exceedsLimit ? "Sin cupo" : "Conectar"}
                 </Button>
               </CardBody>
             </Card>
-          ))}
+          );
+          })}
         </div>
       )}
 
@@ -283,7 +325,7 @@ export default function FacebookCallbackPage() {
                 </Button>
                 <Button
                   color="primary"
-                  onPress={() => router.push("/integrations/facebook")}
+                  onPress={() => router.push("/integrations")}
                 >
                   Reintentar Conexión
                 </Button>

@@ -62,6 +62,7 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { API_ENDPOINTS, API_URL } from "@/config/api";
+import { useWorkspaces } from "@/contexts/WorkspaceContext";
 import { useSocket } from "@/hooks/useSocket";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotificationCenter } from "@/contexts/NotificationCenterContext";
@@ -280,6 +281,7 @@ export default function ContactCenterPage() {
   const router = useRouter();
   const { tenant } = useAuth();
   const { markConversationRead, setActiveConversationId } = useNotificationCenter();
+  const { activeWorkspaceId } = useWorkspaces();
   const [activeTab, setActiveTab] = useState("all");
   const tabTheme = getTabTheme(activeTab);
   
@@ -954,8 +956,13 @@ export default function ContactCenterPage() {
   }, [selectedConv?._id, messages.length]);
 
   useEffect(() => {
+    // Events are broadcast per account: ignore the ones from other companies (workspaces)
+    const isForeign = (workspaceId?: string | null) =>
+      !!workspaceId && !!activeWorkspaceId && String(workspaceId) !== String(activeWorkspaceId);
+
     const handleNewMessage = (data: any) => {
       const raw = data?.message || data;
+      if (isForeign(raw?.workspaceId || data?.workspaceId)) return;
       if (raw?.metadata?.isComment) {
         if (activeTab === 'fb-comments' && raw?.metadata?.platform === 'facebook' && selectedFbPage) {
           fetchFbPostsRef.current?.();
@@ -1010,7 +1017,7 @@ export default function ContactCenterPage() {
     };
 
     const handleConvUpdated = (data: any) => {
-      console.log("[LiveChat] conversation.updated:", data);
+      if (isForeign(data?.workspaceId)) return;
       if (data?._id) {
         setConversations((prev) => {
           const exists = prev.find((c) => c._id === data._id);
@@ -1051,6 +1058,12 @@ export default function ContactCenterPage() {
 
     const handleStatusUpdated = (data: any) => {
       console.log("[LiveChat] message.status.updated:", data);
+      if (data.status === "failed" && data.messageId) {
+        setMessages((prev) =>
+          prev.map((m) => (m._id === data.messageId ? { ...m, status: "failed" } : m))
+        );
+        return;
+      }
       if (data.status === "read" && selectedConv && data.conversationId === selectedConv._id) {
         setMessages((prev) =>
           prev.map((m) =>
@@ -1092,7 +1105,7 @@ export default function ContactCenterPage() {
     };
 
     const handleConversationCreated = (data: any) => {
-      console.log("[LiveChat] conversation.created:", data);
+      if (isForeign(data?.workspaceId)) return;
       
       // Add to conversations list immediately (already populated from backend)
       setConversations((prev) => {
@@ -1127,6 +1140,7 @@ export default function ContactCenterPage() {
 
     // ─── Facebook Comments Real-Time ───
     const handleFbCommentNew = (data: any) => {
+      if (isForeign(data?.workspaceId)) return;
       if (data?.pageId && data.pageId !== selectedFbPage) return;
       const newComment = data?.comment as Comment;
       if (!newComment || !data?.postId) return;
@@ -1336,7 +1350,7 @@ export default function ContactCenterPage() {
   // Facebook Comments functions
   const fetchFbPages = useCallback(async () => {
     try {
-      const data = await api.get(`${process.env.NEXT_PUBLIC_API_URL}/integrations/facebook/status`);
+      const data = await api.get(`${API_URL}/integrations/facebook/status`);
       const rawPages = data.data?.accounts?.filter((a: any) => a.platform === 'facebook' && a.status === 'connected') || [];
       const pages: FacebookPage[] = rawPages.map((p: any) => ({
         pageId: p.pageId,
@@ -1355,7 +1369,7 @@ export default function ContactCenterPage() {
     if (!selectedFbPage) return;
     setLoadingFbPosts(true);
     try {
-      const data = await api.get(`${process.env.NEXT_PUBLIC_API_URL}/integrations/facebook/feed?pageId=${selectedFbPage}&limit=20`);
+      const data = await api.get(`${API_URL}/integrations/facebook/feed?pageId=${selectedFbPage}&limit=20`);
       const posts = data.data?.posts || [];
       setFbPosts(posts);
       if (posts.length > 0) {
@@ -1425,7 +1439,7 @@ export default function ContactCenterPage() {
 
     try {
       const response = await api.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/integrations/facebook/reply-comment`,
+        `${API_URL}/integrations/facebook/reply-comment`,
         { commentId: selectedFbPost.id, message: messageToSend, pageId: selectedFbPage, postId: selectedFbPost.id }
       );
 
@@ -1482,7 +1496,7 @@ export default function ContactCenterPage() {
     
     try {
       const response = await api.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/integrations/facebook/reply-comment`,
+        `${API_URL}/integrations/facebook/reply-comment`,
         { commentId, message: messageToSend, pageId: selectedFbPage, postId: selectedFbPost?.id }
       );
       
@@ -1603,7 +1617,7 @@ export default function ContactCenterPage() {
       'Me enoja': 'ANGRY',
     };
 
-    await api.post(`${process.env.NEXT_PUBLIC_API_URL}/integrations/facebook/react`, {
+    await api.post(`${API_URL}/integrations/facebook/react`, {
       objectId,
       pageId: selectedFbPage,
       reactionType: reactionMap[reaction.label] || 'LIKE',

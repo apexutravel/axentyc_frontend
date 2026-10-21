@@ -158,7 +158,7 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
       {/* Editor */}
       <EditorContent editor={editor} />
 
-      <style jsx global>{`
+      <style>{`
         .ProseMirror { outline: none; }
         .ProseMirror.is-empty::before {
           content: attr(data-placeholder);

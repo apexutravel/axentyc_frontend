@@ -7,6 +7,7 @@ import { HeroUIProvider } from "@heroui/system";
 import { useRouter } from "next/navigation";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
 import { SocketProvider } from "@/hooks/useSocket";
 import { NotificationCenterProvider } from "@/contexts/NotificationCenterContext";
 import { Toaster } from "sonner";
@@ -31,12 +32,14 @@ export function Providers({ children, themeProps }: ProvidersProps) {
     <HeroUIProvider navigate={router.push}>
       <NextThemesProvider {...themeProps}>
         <AuthProvider>
-          <SocketProvider>
-            <NotificationCenterProvider>
-              {children}
-              <Toaster position="top-right" richColors />
-            </NotificationCenterProvider>
-          </SocketProvider>
+          <WorkspaceProvider>
+            <SocketProvider>
+              <NotificationCenterProvider>
+                {children}
+                <Toaster position="top-right" richColors />
+              </NotificationCenterProvider>
+            </SocketProvider>
+          </WorkspaceProvider>
         </AuthProvider>
       </NextThemesProvider>
     </HeroUIProvider>

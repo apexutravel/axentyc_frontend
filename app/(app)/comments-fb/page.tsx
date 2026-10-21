@@ -13,6 +13,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@heroui/popover';
 import EmojiPicker from 'emoji-picker-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
+import { API_URL } from '@/config/api';
 
 interface Comment {
   id: string;
@@ -60,7 +61,7 @@ export default function FacebookCommentsPage() {
 
   const fetchPages = async () => {
     try {
-      const data = await api.get(`${process.env.NEXT_PUBLIC_API_URL}/integrations/facebook/status`);
+      const data = await api.get(`${API_URL}/integrations/facebook/status`);
       const fbPages = data.data?.accounts?.filter((a: any) => a.platform === 'facebook' && a.status === 'connected') || [];
       setPages(fbPages);
       if (fbPages.length > 0) setSelectedPage(fbPages[0].pageId);
@@ -91,7 +92,7 @@ export default function FacebookCommentsPage() {
     if (!selectedPost || !postReplyText.trim()) return;
     setSending(true);
     try {
-      const response = await api.post(`${process.env.NEXT_PUBLIC_API_URL}/integrations/facebook/reply-comment`, {
+      const response = await api.post(`${API_URL}/integrations/facebook/reply-comment`, {
         commentId: selectedPost.id, // Graph API allows commenting on a post via /{postId}/comments
         message: postReplyText,
         pageId: selectedPage,
@@ -123,7 +124,7 @@ export default function FacebookCommentsPage() {
     if (!selectedPage) return;
     setLoading(true);
     try {
-      const data = await api.get(`${process.env.NEXT_PUBLIC_API_URL}/integrations/facebook/feed?pageId=${selectedPage}&limit=20`);
+      const data = await api.get(`${API_URL}/integrations/facebook/feed?pageId=${selectedPage}&limit=20`);
       setPosts(data.data?.posts || []);
       if (data.data?.posts?.length > 0 && !selectedPost) {
         setSelectedPost(data.data.posts[0]);
@@ -144,7 +145,7 @@ export default function FacebookCommentsPage() {
     
     try {
       const response = await api.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/integrations/facebook/reply-comment`,
+        `${API_URL}/integrations/facebook/reply-comment`,
         { commentId, message: replyText, pageId: selectedPage, postId: selectedPost?.id }
       );
       
@@ -180,7 +181,7 @@ export default function FacebookCommentsPage() {
 
   const hideComment = async (commentId: string, hide: boolean) => {
     try {
-      await api.post(`${process.env.NEXT_PUBLIC_API_URL}/integrations/facebook/hide-comment`, {
+      await api.post(`${API_URL}/integrations/facebook/hide-comment`, {
         commentId,
         pageId: selectedPage,
         hide,
@@ -194,7 +195,7 @@ export default function FacebookCommentsPage() {
 
   const deleteComment = async (commentId: string) => {
     try {
-      await api.post(`${process.env.NEXT_PUBLIC_API_URL}/integrations/facebook/delete-comment`, {
+      await api.post(`${API_URL}/integrations/facebook/delete-comment`, {
         commentId,
         pageId: selectedPage,
       });
@@ -226,10 +227,10 @@ export default function FacebookCommentsPage() {
   return (
     <div className="h-screen flex flex-col bg-content1">
       {/* Top: Title + Integrations Tabs */}
-      <div className="border-b px-4 py-3 bg-white">
+      <div className="border-b border-divider px-4 py-3 bg-content1">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-blue-600" />
+            <MessageSquare className="w-5 h-5 text-primary" />
             <h1 className="text-lg font-semibold">Comentarios de Facebook</h1>
           </div>
           <div className="flex items-center gap-2">
@@ -241,7 +242,7 @@ export default function FacebookCommentsPage() {
             <select
               value={selectedPage}
               onChange={(e) => setSelectedPage(e.target.value)}
-              className="px-3 py-1.5 border rounded-lg text-sm"
+              className="px-3 py-1.5 border border-divider rounded-lg bg-content1 text-sm text-foreground"
             >
               {pages.map(p => (
                 <option key={p.pageId} value={p.pageId}>{p.accountName}</option>
@@ -267,7 +268,7 @@ export default function FacebookCommentsPage() {
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - Posts List */}
-        <div className="w-80 border-r overflow-y-auto bg-white">
+        <div className="w-80 border-r border-divider overflow-y-auto bg-content1">
           <div className="p-3 border-b bg-content2">
             <h2 className="font-semibold text-sm">Publicaciones ({posts.length})</h2>
           </div>
@@ -279,7 +280,7 @@ export default function FacebookCommentsPage() {
                 <button
                   key={post.id}
                   onClick={() => setSelectedPost(post)}
-                  className={`w-full text-left p-3 border-b hover:bg-default-100 transition ${selectedPost?.id === post.id ? 'bg-primary-50 border-l-3 border-l-primary' : ''}`}
+                  className={`w-full text-left p-3 border-b border-divider hover:bg-default-100 transition ${selectedPost?.id === post.id ? 'bg-primary/10 border-l-3 border-l-primary' : ''}`}
                 >
                   <div className="flex gap-2 items-start">
                     {post.full_picture && (
@@ -433,7 +434,7 @@ export default function FacebookCommentsPage() {
               </Card>
             </div>
           ) : (
-            <div className="h-full flex items-center justify-center text-gray-500">
+            <div className="h-full flex items-center justify-center text-default-500">
               <div className="text-center">
                 <MessageSquare className="w-16 h-16 mx-auto mb-4 opacity-30" />
                 <p>Selecciona una publicación</p>

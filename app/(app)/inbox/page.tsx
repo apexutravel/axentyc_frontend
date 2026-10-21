@@ -13,12 +13,13 @@ import { toast } from "sonner";
 import {
   Mail, Settings, Plus, Inbox, Send, Trash2, RefreshCw, Search,
   Reply, ReplyAll, Forward, Trash, Star, Archive, X, FileText,
-  UserPlus, Target, DollarSign, MoreVertical, CheckSquare, AlertCircle,
+  UserPlus, Target, DollarSign, MoreVertical, CheckSquare, AlertCircle, Layers, ChevronDown,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { API_ENDPOINTS } from "@/config/api";
 import { useSocket } from "@/hooks/useSocket";
 import RichTextEditor from "@/components/RichTextEditor";
+import { EmailAccount, accountColor, unwrap } from "@/lib/email-accounts";
 
 /* ── types ── */
 interface EmailAddr { name?: string; address: string }
@@ -35,6 +36,7 @@ interface EmailItem {
   isRead: boolean;
   isFlagged: boolean;
   folder: string;
+  integrationId?: string;
 }
 interface FolderItem { name: string; path: string; specialUse?: string | null; count: number; unread: number }
 
@@ -77,6 +79,9 @@ const DEFAULT_FOLDERS: FolderItem[] = [
   { name: "Archive", path: "Archive", specialUse: "\\Archive", count: 0, unread: 0 },
   { name: "Trash", path: "Trash", specialUse: "\\Trash", count: 0, unread: 0 },
 ];
+
+const ALL_ACCOUNTS = "all";
+const ACCOUNT_STORAGE_KEY = "axentyc.inbox.account";
 
 const fmtDate = (d: string) => {
   const date = new Date(d);
@@ -166,7 +171,8 @@ function HtmlEmailFrame({ html }: { html: string }) {
 
 /* ══════════════════════════════════════════════════════════════ */
 export default function InboxPage() {
-  const [status, setStatus] = useState<any>(null);
+  const [accounts, setAccounts] = useState<EmailAccount[]>([]);
+  const [accountId, setAccountId] = useState<string>(""); // "" = not resolved yet, "all" = unified inbox
   const [loading, setLoading] = useState(true);
   const [folders, setFolders] = useState<FolderItem[]>(DEFAULT_FOLDERS);
   const [folderPath, setFolderPath] = useState("INBOX");
@@ -188,6 +194,7 @@ export default function InboxPage() {
   const [composeOpen, setComposeOpen] = useState(false);
   const [composing, setComposing] = useState(false);
   const [form, setForm] = useState({ to: "", cc: "", bcc: "", subject: "", body: "", htmlBody: "" });
+  const [fromId, setFromId] = useState<string>("");
   const [showCc, setShowCc] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
 
@@ -199,42 +206,75 @@ export default function InboxPage() {
   const socket = useSocket();
 
   /* ── data loading ── */
-  const loadStatus = useCallback(async () => {
+  const connectedAccounts = useMemo(() => accounts.filter(a => a.status === "connected"), [accounts]);
+  const accountById = useMemo(() => new Map(accounts.map(a => [a._id, a])), [accounts]);
+  const defaultAccount = connectedAccounts.find(a => a.isDefault) || connectedAccounts[0];
+  // Mailbox sent to the API. Undefined = unified inbox (all mailboxes)
+  const integrationParam = accountId && accountId !== ALL_ACCOUNTS ? accountId : undefined;
+  const isUnified = accountId === ALL_ACCOUNTS;
+  const totalUnread = connectedAccounts.reduce((sum, a) => sum + (a.unreadCount || 0), 0);
+
+  const loadAccounts = useCallback(async () => {
     try {
-      const r = await api.get(API_ENDPOINTS.integrations.email.status);
-      setStatus((r as any)?.data ?? r);
-    } catch { setStatus({ status: "disconnected" }); }
+      const r = await api.get(API_ENDPOINTS.integrations.email.accounts);
+      const list = unwrap<EmailAccount[]>(r);
+      setAccounts(Array.isArray(list) ? list : []);
+    } catch { setAccounts([]); }
     finally { setLoading(false); }
   }, []);
 
   const loadFolders = useCallback(async () => {
+    if (!accountId) return;
     try {
-      const r = await api.get(API_ENDPOINTS.emails.folders);
+      const qs = integrationParam ? `?integrationId=${integrationParam}` : "";
+      const r = await api.get(`${API_ENDPOINTS.emails.folders}${qs}`);
       const data = (r as any)?.data ?? r ?? [];
       if (Array.isArray(data) && data.length > 0) setFolders(data);
     } catch {}
-  }, []);
+  }, [accountId, integrationParam]);
 
   const loadEmails = useCallback(async (path: string) => {
+    if (!accountId) return;
     setLoadingList(true);
     try {
-      const r = await api.get(`${API_ENDPOINTS.emails.list}?folder=${encodeURIComponent(path)}`);
+      const integ = integrationParam ? `&integrationId=${integrationParam}` : "";
+      const r = await api.get(`${API_ENDPOINTS.emails.list}?folder=${encodeURIComponent(path)}${integ}`);
       const d = (r as any)?.data ?? r;
       setEmails(d.emails || []);
     } catch { toast.error("Error al cargar emails"); }
     finally { setLoadingList(false); setSelectedIds(new Set()); setSelectMode(false); }
-  }, []);
+  }, [accountId, integrationParam]);
 
   /* ── actions ── */
+  const selectAccount = (id: string) => {
+    if (id === accountId) return;
+    try { window.localStorage.setItem(ACCOUNT_STORAGE_KEY, id); } catch {}
+    setAccountId(id);
+    // Folder names are provider specific: always restart from INBOX
+    setFolderPath("INBOX");
+    setFolderName("INBOX");
+    setFolders(DEFAULT_FOLDERS);
+    setEmails([]);
+    setSelected(null);
+    setSelectedIds(new Set());
+    setSelectMode(false);
+  };
+
   const doSync = async () => {
     setSyncing(true);
     try {
-      // Sync ALL folders in a single connection
-      await api.post(API_ENDPOINTS.emails.sync);
-      toast.success("Todas las carpetas sincronizadas");
-      await loadFolders();
-      await loadEmails(folderPath);
-    } catch (e: any) { toast.error(e?.response?.data?.message || "Error al sincronizar"); }
+      // One mailbox (all its folders in a single connection) or every mailbox of the agency
+      const qs = integrationParam ? `?integrationId=${integrationParam}` : "";
+      const r = await api.post(`${API_ENDPOINTS.emails.sync}${qs}`);
+      const d: any = unwrap(r);
+      const failed = Array.isArray(d?.accounts) ? d.accounts.filter((a: any) => !a.ok) : [];
+      if (failed.length > 0) {
+        toast.error(`No se pudo sincronizar: ${failed.map((a: any) => a.emailAddress).join(", ")}`);
+      } else {
+        toast.success(integrationParam ? "Cuenta sincronizada" : "Todas las cuentas sincronizadas");
+      }
+      await Promise.all([loadAccounts(), loadFolders(), loadEmails(folderPath)]);
+    } catch (e: any) { toast.error(e?.response?.data?.message || e?.message || "Error al sincronizar"); }
     finally { setSyncing(false); }
   };
 
@@ -299,11 +339,19 @@ export default function InboxPage() {
     }
   };
 
+  const openCompose = () => {
+    // Sender defaults to the mailbox on screen, else the agency default
+    setFromId(integrationParam && connectedAccounts.some(a => a._id === integrationParam) ? integrationParam : defaultAccount?._id || "");
+    setComposeOpen(true);
+  };
+
   const doSend = async () => {
     if (!form.to || !form.subject) { toast.error("Destinatario y asunto son obligatorios"); return; }
+    if (!fromId) { toast.error("Elige la cuenta desde la que enviar"); return; }
     setComposing(true);
     try {
       await api.post(API_ENDPOINTS.emails.send, {
+        integrationId: fromId,
         to: form.to.split(",").map(e => ({ address: e.trim() })),
         cc: form.cc ? form.cc.split(",").map(e => ({ address: e.trim() })) : [],
         bcc: form.bcc ? form.bcc.split(",").map(e => ({ address: e.trim() })) : [],
@@ -408,34 +456,54 @@ export default function InboxPage() {
   };
 
   /* ── effects ── */
+  useEffect(() => { loadAccounts(); }, [loadAccounts]);
+
+  // Resolve which mailbox is shown: remembered choice, else the default one
   useEffect(() => {
-    loadStatus();
-    loadFolders(); // Load folders immediately, don't wait for status
-  }, [loadStatus, loadFolders]);
+    if (loading || connectedAccounts.length === 0) return;
+    setAccountId(prev => {
+      const canUnify = connectedAccounts.length > 1;
+      if (prev === ALL_ACCOUNTS && canUnify) return prev;
+      if (prev && connectedAccounts.some(a => a._id === prev)) return prev;
+      let stored: string | null = null;
+      try { stored = window.localStorage.getItem(ACCOUNT_STORAGE_KEY); } catch {}
+      if (stored === ALL_ACCOUNTS && canUnify) return ALL_ACCOUNTS;
+      const remembered = connectedAccounts.find(a => a._id === stored);
+      return (remembered || defaultAccount)._id;
+    });
+  }, [loading, connectedAccounts, defaultAccount]);
 
   useEffect(() => {
-    if (status?.status === "connected") { loadEmails(folderPath); }
-  }, [status, folderPath, loadEmails]);
+    if (accountId) loadEmails(folderPath);
+  }, [accountId, folderPath, loadEmails]);
 
-  // Reload folders when folder path changes (for count updates)
+  // Reload folders when account / folder changes (for count updates)
   useEffect(() => {
-    if (status?.status === "connected") loadFolders();
-  }, [folderPath, status, loadFolders]);
+    if (accountId) loadFolders();
+  }, [accountId, folderPath, loadFolders]);
 
   useEffect(() => {
     if (!socket) return;
+    // Does an event about a given mailbox concern the view currently on screen?
+    const inView = (mailboxId?: string) => !integrationParam || !mailboxId || mailboxId === integrationParam;
+
     const u1 = socket.subscribe("email.received", (d: any) => {
-      if (d.folder === folderPath) setEmails(prev => [d, ...prev]);
+      if (d.folder === folderPath && inView(d.integrationId)) setEmails(prev => [d, ...prev]);
       loadFolders();
+      loadAccounts();
     });
     const u2 = socket.subscribe("email.updated", (d: any) => {
       setEmails(prev => prev.map(e => e._id === d._id ? { ...e, ...d } : e));
+      loadAccounts();
     });
-    const u3 = socket.subscribe("email.sync.complete", () => {
+    const u3 = socket.subscribe("email.sync.complete", (d: any) => {
+      loadAccounts();
+      if (!inView(d?.integrationId)) return;
       loadFolders();
       loadEmails(folderPath);
     });
-    const u4 = socket.subscribe("email.sent", () => {
+    const u4 = socket.subscribe("email.sent", (d: any) => {
+      if (!inView(d?.integrationId)) return;
       loadFolders();
       if (folders.find(f => f.specialUse === "\\Sent" && f.path === folderPath)) {
         loadEmails(folderPath);
@@ -443,30 +511,31 @@ export default function InboxPage() {
     });
     const u5 = socket.subscribe("email.deleted", () => {
       loadFolders();
+      loadAccounts();
     });
     const u6 = socket.subscribe("email.moved", (d: any) => {
       // Email moved to another folder (e.g., to Trash)
       // Remove from current view if we're viewing the source folder
       setEmails(prev => prev.filter(e => e._id !== d.id));
-      // If we're viewing the target folder, add it there
-      if (d.toFolder === folderPath && d.email) {
+      // If we're viewing the target folder (of the same mailbox), add it there
+      if (d.toFolder === folderPath && d.email && inView(d.email.integrationId ?? d.integrationId)) {
         setEmails(prev => [d.email, ...prev]);
       }
       loadFolders(); // Update folder counts
     });
     return () => { u1(); u2(); u3(); u4(); u5(); u6(); };
-  }, [socket, folderPath, loadFolders, loadEmails, folders]);
+  }, [socket, folderPath, integrationParam, loadFolders, loadEmails, loadAccounts, folders]);
 
   /* ── loading / not connected ── */
   if (loading) return <div className="h-full flex items-center justify-center"><Spinner size="lg" /></div>;
 
-  if (status?.status !== "connected") {
+  if (connectedAccounts.length === 0) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center space-y-4 max-w-md">
           <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary"><Mail size={24} /></div>
           <h2 className="text-xl font-semibold">Configura tu Email</h2>
-          <p className="text-sm text-default-500">Conecta tu cuenta SMTP/IMAP en Integraciones para usar el Inbox.</p>
+          <p className="text-sm text-default-500">Vincula una o varias cuentas SMTP/IMAP de tu agencia en Integraciones para usar el Inbox.</p>
           <Button as={Link} href="/integrations" color="primary" startContent={<Settings size={16} />}>Ir a Integraciones</Button>
         </div>
       </div>
@@ -480,12 +549,98 @@ export default function InboxPage() {
     <div className="h-[calc(100vh-4rem)] flex overflow-hidden bg-content1 -m-6">
 
       {/* ─── COL 1: Sidebar ─── */}
-      <aside className="w-[200px] shrink-0 bg-content1 border-r border-divider flex flex-col">
+      <aside className="w-[232px] shrink-0 bg-content1 border-r border-divider flex flex-col">
         <div className="p-3">
-          <Button color="primary" className="w-full" size="sm" startContent={<Plus size={14} />} onPress={() => setComposeOpen(true)}>
+          <Button color="primary" className="w-full" size="sm" startContent={<Plus size={14} />} onPress={openCompose}>
             Nuevo Email
           </Button>
         </div>
+
+        {/* Mailbox selector */}
+        <div className="px-3 pb-3">
+          <Dropdown placement="bottom-start" classNames={{ content: "min-w-[208px]" }}>
+            <DropdownTrigger>
+              <button
+                type="button"
+                className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl border border-divider bg-default-50 hover:bg-default-100 transition-colors text-left"
+              >
+                {isUnified ? (
+                  <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0"><Layers size={14} /></span>
+                ) : (
+                  <span
+                    className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold text-white"
+                    style={{ backgroundColor: accountColor(accountId) }}
+                  >
+                    {(accountById.get(accountId)?.label || "?").charAt(0).toUpperCase()}
+                  </span>
+                )}
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm font-semibold leading-tight truncate">
+                    {isUnified ? "Todas las cuentas" : accountById.get(accountId)?.label || "Cuenta"}
+                  </span>
+                  <span className="block text-[11px] text-default-400 leading-tight truncate">
+                    {isUnified ? `${connectedAccounts.length} cuentas` : accountById.get(accountId)?.emailAddress}
+                  </span>
+                </span>
+                {(isUnified ? totalUnread : accountById.get(accountId)?.unreadCount || 0) > 0 && (
+                  <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-primary text-white shrink-0">
+                    {isUnified ? totalUnread : accountById.get(accountId)?.unreadCount}
+                  </span>
+                )}
+                <ChevronDown size={14} className="text-default-400 shrink-0" />
+              </button>
+            </DropdownTrigger>
+            <DropdownMenu
+              aria-label="Seleccionar cuenta de email"
+              selectionMode="single"
+              disallowEmptySelection
+              selectedKeys={accountId ? [accountId] : []}
+              onAction={(key) => selectAccount(String(key))}
+              className="max-h-80 overflow-y-auto"
+            >
+              {[
+                ...(connectedAccounts.length > 1
+                  ? [
+                      <DropdownItem
+                        key={ALL_ACCOUNTS}
+                        textValue="Todas las cuentas"
+                        startContent={<span className="w-6 h-6 min-w-6 shrink-0 rounded-md bg-primary/10 text-primary flex items-center justify-center"><Layers size={13} /></span>}
+                        endContent={totalUnread > 0 ? <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">{totalUnread}</span> : null}
+                      >
+                        Todas las cuentas
+                      </DropdownItem>,
+                    ]
+                  : []),
+                ...connectedAccounts.map((a) => (
+                  <DropdownItem
+                    key={a._id}
+                    textValue={a.label}
+                    description={a.emailAddress}
+                    startContent={
+                      <span
+                        className="w-6 h-6 min-w-6 shrink-0 rounded-md flex items-center justify-center text-[11px] font-bold text-white"
+                        style={{ backgroundColor: accountColor(a._id) }}
+                      >
+                        {(a.label || "?").charAt(0).toUpperCase()}
+                      </span>
+                    }
+                    endContent={
+                      <span className="flex items-center gap-1">
+                        {a.lastError && <AlertCircle size={12} className="text-danger" />}
+                        {(a.unreadCount || 0) > 0 && (
+                          <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">{a.unreadCount}</span>
+                        )}
+                      </span>
+                    }
+                  >
+                    {a.label}
+                  </DropdownItem>
+                )),
+              ]}
+            </DropdownMenu>
+          </Dropdown>
+        </div>
+        <div className="mx-3 mb-2 border-t border-divider" />
 
         <nav className="flex-1 overflow-y-auto px-2 space-y-0.5">
           {filterFolders(folders).map(f => (
@@ -515,7 +670,12 @@ export default function InboxPage() {
         {/* header */}
         <div className="p-3 border-b border-divider space-y-2">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold">{folderName}</h2>
+            <div className="min-w-0">
+              <h2 className="text-base font-bold leading-tight">{folderName}</h2>
+              <p className="text-[11px] text-default-400 truncate">
+                {isUnified ? "Todas las cuentas" : accountById.get(accountId)?.emailAddress || ""}
+              </p>
+            </div>
             <div className="flex items-center gap-1">
               <span className="text-xs text-default-400">{visible.length}/{emails.length}</span>
               <Button size="sm" variant="light" isIconOnly
@@ -603,8 +763,16 @@ export default function InboxPage() {
                   {email.subject || "(Sin asunto)"}
                 </p>
                 {/* row 3: preview */}
-                <p className="text-xs text-default-400 truncate mt-0.5">
-                  {email.preview || ""}
+                <p className="text-xs text-default-400 truncate mt-0.5 flex items-center gap-1.5">
+                  {isUnified && email.integrationId && (
+                    <span
+                      className="shrink-0 text-[10px] font-semibold px-1.5 py-px rounded-md"
+                      style={{ backgroundColor: accountColor(email.integrationId) + "22", color: accountColor(email.integrationId) }}
+                    >
+                      {accountById.get(email.integrationId)?.label || "Cuenta"}
+                    </span>
+                  )}
+                  <span className="truncate">{email.preview || ""}</span>
                 </p>
               </div>
             </div>
@@ -668,6 +836,15 @@ export default function InboxPage() {
                   <span className="text-xs text-default-400">
                     {new Date(selected.date).toLocaleString("es", { dateStyle: "long", timeStyle: "short" })}
                   </span>
+                  {selected.integrationId && accountById.get(selected.integrationId) && (
+                    <span
+                      className="ml-2 inline-flex items-center gap-1 text-[11px] font-semibold px-1.5 py-px rounded-md align-middle"
+                      style={{ backgroundColor: accountColor(selected.integrationId) + "22", color: accountColor(selected.integrationId) }}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: accountColor(selected.integrationId) }} />
+                      {accountById.get(selected.integrationId)!.label}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -713,6 +890,30 @@ export default function InboxPage() {
               </ModalHeader>
               <ModalBody>
                 <div className="flex flex-col">
+                  {/* From (mailbox) */}
+                  <div className="flex items-center border-b border-divider px-5 py-1.5">
+                    <span className="text-sm text-default-400 w-12 shrink-0">De</span>
+                    {connectedAccounts.length > 1 ? (
+                      <select
+                        className="flex-1 bg-transparent outline-none text-sm py-1.5 cursor-pointer"
+                        value={fromId}
+                        onChange={e => setFromId(e.target.value)}
+                      >
+                        {connectedAccounts.map(a => (
+                          <option key={a._id} value={a._id}>
+                            {a.label} &lt;{a.emailAddress}&gt;{a.isDefault ? " (predeterminada)" : ""}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="flex-1 text-sm py-1.5 text-default-600">
+                        {accountById.get(fromId)?.label} &lt;{accountById.get(fromId)?.emailAddress}&gt;
+                      </span>
+                    )}
+                    {fromId && (
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0 ml-2" style={{ backgroundColor: accountColor(fromId) }} />
+                    )}
+                  </div>
                   {/* To field */}
                   <div className="flex items-center border-b border-divider px-5 py-1.5">
                     <span className="text-sm text-default-400 w-12 shrink-0">Para</span>

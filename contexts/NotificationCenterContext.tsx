@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useSocket } from "@/hooks/useSocket";
+import { useWorkspaces } from "@/contexts/WorkspaceContext";
 import { api } from "@/lib/api";
 import { API_ENDPOINTS } from "@/config/api";
 
@@ -18,6 +19,8 @@ export interface ChatNotification {
   senderName?: string;
   platform?: string;
   pageName?: string;
+  /** Company (workspace) the notification belongs to */
+  workspaceId?: string;
   createdAt: string;
   read: boolean;
 }
@@ -128,6 +131,12 @@ export function NotificationCenterProvider({ children }: { children: React.React
   const permissionRequested = useRef(false);
   const { tenant, user } = useAuth();
   const { subscribe, setTenantId, isConnected, tenantJoined } = useSocket();
+  const { activeWorkspaceId, hasWorkspace } = useWorkspaces();
+  const activeWorkspaceRef = useRef<string | null>(null);
+  activeWorkspaceRef.current = activeWorkspaceId;
+  // Realtime events are broadcast per account: keep only those of the active workspace
+  const isForActiveWorkspace = (workspaceId?: string | null) =>
+    !workspaceId || !activeWorkspaceRef.current || String(workspaceId) === activeWorkspaceRef.current;
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const activeConvIdRef = useRef<string | null>(null);
   const bcRef = useRef<BroadcastChannel | null>(null);
@@ -280,7 +289,7 @@ export function NotificationCenterProvider({ children }: { children: React.React
 
   // Load unread conversations on mount to create notifications for missed messages
   useEffect(() => {
-    if (!tenant?.id) return;
+    if (!tenant?.id || !hasWorkspace || !activeWorkspaceId) return;
     
     const loadUnreadConversations = async () => {
       try {
@@ -319,6 +328,7 @@ export function NotificationCenterProvider({ children }: { children: React.React
             senderName: name,
             platform: platform || undefined,
             pageName: pageName,
+            workspaceId: conv?.workspaceId ? String(conv.workspaceId) : activeWorkspaceId,
             createdAt: lastMsg?.createdAt || conv?.updatedAt || new Date().toISOString(),
             read: false,
           };
@@ -332,7 +342,7 @@ export function NotificationCenterProvider({ children }: { children: React.React
     };
     
     loadUnreadConversations();
-  }, [tenant?.id, pushNotification]);
+  }, [tenant?.id, hasWorkspace, activeWorkspaceId, pushNotification]);
 
   // Register FCM token and listen to foreground messages
   useEffect(() => {
@@ -399,6 +409,8 @@ export function NotificationCenterProvider({ children }: { children: React.React
       const conversationId = data?.conversationId || data?.message?.conversationId;
       const message = data?.message || data;
       if (message?.metadata?.isComment) return;
+      const messageWorkspaceId = message?.workspaceId || data?.workspaceId;
+      if (!isForActiveWorkspace(messageWorkspaceId)) return;
       
       // Use contact name if available, otherwise use senderName from message
       const contactName =
@@ -423,6 +435,7 @@ export function NotificationCenterProvider({ children }: { children: React.React
         senderName,
         platform: message?.metadata?.platform || (data?.channel || '').toLowerCase() || undefined,
         pageName: data?.pageName || message?.metadata?.pageName,
+        workspaceId: messageWorkspaceId ? String(messageWorkspaceId) : undefined,
         createdAt: message.createdAt || new Date().toISOString(),
         read: false,
       };
@@ -434,6 +447,7 @@ export function NotificationCenterProvider({ children }: { children: React.React
     const handleConversationCreated = (data: any) => {
       console.log("[Notification] conversation.created event:", JSON.stringify(data, null, 2));
       if (data?.metadata?.isComment) return;
+      if (!isForActiveWorkspace(data?.workspaceId)) return;
       const conversationId = data?._id || data?.conversationId;
       const contactName = data?.contactId?.name || "Visitante";
       
@@ -444,6 +458,7 @@ export function NotificationCenterProvider({ children }: { children: React.React
         title: "Nueva conversación",
         message: `${contactName} inició un chat`,
         senderName: contactName,
+        workspaceId: data?.workspaceId ? String(data.workspaceId) : undefined,
         createdAt: new Date().toISOString(),
         read: false,
       };
@@ -483,6 +498,8 @@ export function NotificationCenterProvider({ children }: { children: React.React
 
     console.log("[Notification] Registering socket event listeners");
     const handleEmailReceived = (data: any) => {
+      if (!isForActiveWorkspace(data?.workspaceId)) return;
+      if (data?.folder && data.folder !== "INBOX") return;
       console.log("[Notification] email.received event:", data?.subject);
       const senderName = data?.from?.name || data?.from?.address || "Remitente";
       const subject = data?.subject || "(Sin asunto)";
@@ -492,6 +509,7 @@ export function NotificationCenterProvider({ children }: { children: React.React
         title: `Email de ${senderName}`,
         message: subject,
         senderName,
+        workspaceId: data?.workspaceId ? String(data.workspaceId) : undefined,
         createdAt: data?.date || new Date().toISOString(),
         read: false,
       };
@@ -499,11 +517,12 @@ export function NotificationCenterProvider({ children }: { children: React.React
     };
 
     const handleEmailSyncComplete = (data: any) => {
+      if (!isForActiveWorkspace(data?.workspaceId)) return;
       if (data?.newEmails > 0) {
         const notification: ChatNotification = {
           id: `email-sync:${Date.now()}`,
           type: "email",
-          title: "Nuevos emails sincronizados",
+          title: data?.accountLabel ? `Nuevos emails en ${data.accountLabel}` : "Nuevos emails sincronizados",
           message: `${data.newEmails} nuevo${data.newEmails > 1 ? "s" : ""} email${data.newEmails > 1 ? "s" : ""}`,
           createdAt: new Date().toISOString(),
           read: false,
@@ -548,19 +567,25 @@ export function NotificationCenterProvider({ children }: { children: React.React
     setNotifications([]);
   }, []);
 
+  // Only show the notifications of the active workspace (untagged legacy ones stay visible)
+  const visibleNotifications = useMemo(
+    () => notifications.filter((n) => !n.workspaceId || n.workspaceId === activeWorkspaceId),
+    [notifications, activeWorkspaceId]
+  );
+
   const unreadCount = useMemo(
-    () => notifications.reduce((total, item) => total + (item.read ? 0 : 1), 0),
-    [notifications]
+    () => visibleNotifications.reduce((total, item) => total + (item.read ? 0 : 1), 0),
+    [visibleNotifications]
   );
 
   const filteredNotifications = useMemo(
-    () => activeFilter === "all" ? notifications : notifications.filter((n) => n.type === activeFilter),
-    [notifications, activeFilter]
+    () => activeFilter === "all" ? visibleNotifications : visibleNotifications.filter((n) => n.type === activeFilter),
+    [visibleNotifications, activeFilter]
   );
 
   const value = useMemo(
     () => ({
-      notifications,
+      notifications: visibleNotifications,
       unreadCount,
       activeFilter,
       setActiveFilter,
@@ -571,7 +596,7 @@ export function NotificationCenterProvider({ children }: { children: React.React
       clearNotifications,
       setActiveConversationId,
     }),
-    [notifications, unreadCount, activeFilter, filteredNotifications, markAsRead, markAllAsRead, markConversationRead, clearNotifications, setActiveConversationId]
+    [visibleNotifications, unreadCount, activeFilter, filteredNotifications, markAsRead, markAllAsRead, markConversationRead, clearNotifications, setActiveConversationId]
   );
 
   return <NotificationCenterContext.Provider value={value}>{children}</NotificationCenterContext.Provider>;

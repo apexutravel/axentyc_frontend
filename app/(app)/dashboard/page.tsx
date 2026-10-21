@@ -1,242 +1,208 @@
 "use client";
 
-import { Card, CardBody, CardHeader } from "@heroui/card";
+import { useEffect, useState } from "react";
+import NextLink from "next/link";
+import { Card, CardBody } from "@heroui/card";
+import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
+import { Progress } from "@heroui/progress";
 import {
+  ArrowRight,
+  BadgeCheck,
+  Building2,
+  CheckCircle2,
+  CreditCard,
+  Inbox,
+  Plug,
+  Rocket,
+  Settings,
+  Sparkles,
   Users,
-  UserPlus,
-  Handshake,
-  MessageSquare,
-  TrendingUp,
-  TrendingDown,
-  ArrowUpRight,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
+import { useWorkspaces } from "@/contexts/WorkspaceContext";
+import { BillingService } from "@/lib/billing";
 
-const stats = [
+const setupSteps = [
   {
-    title: "Conversaciones Activas",
-    value: "128",
-    change: "+12%",
-    trend: "up" as const,
-    icon: MessageSquare,
-    color: "primary",
+    title: "Crea tu empresa/workspace",
+    description: "Define el negocio, marca, cliente o sucursal donde trabajará el equipo.",
+    href: "/workspaces",
   },
   {
-    title: "Contactos Totales",
-    value: "2,847",
-    change: "+8%",
-    trend: "up" as const,
-    icon: Users,
-    color: "secondary",
+    title: "Completa datos del negocio",
+    description: "Agrega logo, descripción, color, moneda, horario y preferencias.",
+    href: "/workspace-settings",
   },
   {
-    title: "Leads Nuevos",
-    value: "64",
-    change: "+23%",
-    trend: "up" as const,
-    icon: UserPlus,
-    color: "success",
+    title: "Conecta tus canales",
+    description: "Activa Meta, email o widget web dentro del workspace activo.",
+    href: "/integrations",
   },
   {
-    title: "Deals en Pipeline",
-    value: "$48,500",
-    change: "-3%",
-    trend: "down" as const,
-    icon: Handshake,
-    color: "warning",
+    title: "Invita a tu equipo",
+    description: "Agrega usuarios y define quién puede operar cada workspace.",
+    href: "/team",
   },
 ];
-
-const recentConversations = [
-  { name: "Maria Garcia", channel: "WhatsApp", message: "Hola, me interesa el plan premium", time: "2 min", unread: true },
-  { name: "Carlos Lopez", channel: "Instagram", message: "Necesito info sobre precios", time: "15 min", unread: true },
-  { name: "Ana Martinez", channel: "Facebook", message: "Gracias por la info!", time: "1 hr", unread: false },
-  { name: "Pedro Sanchez", channel: "WhatsApp", message: "Cuando puedo agendar una demo?", time: "2 hr", unread: false },
-  { name: "Laura Torres", channel: "TikTok", message: "Vi su video y quiero saber mas", time: "3 hr", unread: false },
-];
-
-const channelColors: Record<string, "primary" | "secondary" | "success" | "warning" | "danger"> = {
-  WhatsApp: "success",
-  Instagram: "secondary",
-  Facebook: "primary",
-  TikTok: "danger",
-};
-
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08 },
-  },
-};
-
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 },
-};
 
 export default function DashboardPage() {
+  const { user } = useAuth();
+  const { workspaces, activeWorkspace } = useWorkspaces();
+  const [subscription, setSubscription] = useState<any>(null);
+
+  useEffect(() => {
+    BillingService.subscription()
+      .then((res) => setSubscription((res as any)?.data ?? res))
+      .catch(() => undefined);
+  }, []);
+
+  const connectedAssets = subscription?.usage?.connectedAssets;
+  const connectedAssetsLimit = subscription?.plan?.limits?.maxConnectedAssets || 0;
+  const usedAssets = connectedAssets?.total || 0;
+  const setupProgress = Math.round(
+    ((workspaces.length > 0 ? 1 : 0) +
+      (activeWorkspace?.description ? 1 : 0) +
+      (usedAssets > 0 ? 1 : 0)) /
+      4 *
+      100,
+  );
+
   return (
-    <motion.div
-      animate="show"
-      className="space-y-6"
-      initial="hidden"
-      variants={container}
-    >
-      <motion.div variants={item}>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-default-500 text-sm mt-1">
-          Bienvenido de vuelta. Aqu&iacute; tienes un resumen de tu actividad.
-        </p>
-      </motion.div>
+    <motion.div animate={{ opacity: 1, y: 0 }} className="space-y-6" initial={{ opacity: 0, y: 20 }}>
+      <section className="relative overflow-hidden rounded-3xl border border-divider bg-gradient-to-br from-primary/15 via-content1 to-secondary/10 p-6 md:p-8">
+        <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
+        <div className="absolute -bottom-24 left-1/3 h-72 w-72 rounded-full bg-secondary/20 blur-3xl" />
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <Chip color="primary" startContent={<Sparkles size={14} />} variant="flat">
+              Cuenta AXENTYC
+            </Chip>
+            <h1 className="mt-4 text-3xl font-black tracking-tight md:text-4xl">
+              Bienvenido{user?.firstName ? `, ${user.firstName}` : ""}
+            </h1>
+            <p className="mt-2 text-sm text-default-500 md:text-base">
+              Este es el dashboard general de tu cuenta. Desde aquí creas empresas/workspaces, revisas tu plan y entras a la operación del workspace activo.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:min-w-[520px]">
+            <SummaryTile label="Plan" value={subscription?.plan?.name || "-"} icon={CreditCard} />
+            <SummaryTile label="Workspaces" value={String(workspaces.length)} icon={Building2} />
+            <SummaryTile label="Canales" value={`${usedAssets}/${connectedAssetsLimit || "-"}`} icon={Plug} />
+          </div>
+        </div>
+      </section>
 
-      <motion.div
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
-        variants={item}
-      >
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={stat.title} className="border border-divider">
-              <CardBody className="gap-2">
-                <div className="flex items-center justify-between">
-                  <div className={`p-2 rounded-lg bg-${stat.color}/10`}>
-                    <Icon className={`text-${stat.color}`} size={20} />
-                  </div>
-                  <Chip
-                    color={stat.trend === "up" ? "success" : "danger"}
-                    size="sm"
-                    startContent={
-                      stat.trend === "up" ? (
-                        <TrendingUp size={12} />
-                      ) : (
-                        <TrendingDown size={12} />
-                      )
-                    }
-                    variant="flat"
-                  >
-                    {stat.change}
-                  </Chip>
-                </div>
-                <div className="mt-2">
-                  <p className="text-2xl font-bold">{stat.value}</p>
-                  <p className="text-xs text-default-500">{stat.title}</p>
-                </div>
-              </CardBody>
-            </Card>
-          );
-        })}
-      </motion.div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <motion.div variants={item}>
-          <Card className="border border-divider">
-            <CardHeader className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Conversaciones Recientes</h3>
-              <Chip
-                as="a"
-                color="primary"
-                endContent={<ArrowUpRight size={12} />}
-                href="/dashboard/inbox"
-                size="sm"
-                variant="flat"
-              >
-                Ver todas
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_420px] gap-6">
+        <Card className="border border-divider">
+          <CardBody className="gap-6 p-6">
+            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div>
+                <h2 className="text-xl font-black">Primeros pasos</h2>
+                <p className="text-sm text-default-500">
+                  AXENTYC tiene más sentido cuando cada empresa/workspace tiene canales conectados y un equipo asignado.
+                </p>
+              </div>
+              <Chip color={setupProgress >= 75 ? "success" : "warning"} variant="flat">
+                {setupProgress}% configurado
               </Chip>
-            </CardHeader>
-            <CardBody className="gap-0 pt-0">
-              {recentConversations.map((conv, idx) => (
-                <div
-                  key={idx}
-                  className={`flex items-center gap-3 py-3 ${idx !== recentConversations.length - 1 ? "border-b border-divider" : ""}`}
-                >
-                  <div className="w-10 h-10 rounded-full bg-default-200 flex items-center justify-center flex-shrink-0">
-                    <span className="text-sm font-medium">
-                      {conv.name.split(" ").map((n) => n[0]).join("")}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className={`text-sm font-medium truncate ${conv.unread ? "text-foreground" : "text-default-600"}`}>
-                        {conv.name}
-                      </p>
-                      <Chip
-                        color={channelColors[conv.channel] || "default"}
-                        size="sm"
-                        variant="dot"
-                      >
-                        {conv.channel}
-                      </Chip>
-                    </div>
-                    <p className="text-xs text-default-400 truncate">
-                      {conv.message}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <span className="text-xs text-default-400">{conv.time}</span>
-                    {conv.unread && (
-                      <div className="w-2 h-2 rounded-full bg-primary" />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </CardBody>
-          </Card>
-        </motion.div>
+            </div>
+            <Progress aria-label="Progreso de configuración" color={setupProgress >= 75 ? "success" : "primary"} value={setupProgress} />
 
-        <motion.div variants={item}>
-          <Card className="border border-divider">
-            <CardHeader className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Pipeline de Ventas</h3>
-              <Chip
-                as="a"
-                color="primary"
-                endContent={<ArrowUpRight size={12} />}
-                href="/dashboard/deals"
-                size="sm"
-                variant="flat"
-              >
-                Ver pipeline
-              </Chip>
-            </CardHeader>
-            <CardBody className="gap-4 pt-0">
-              {[
-                { stage: "Nuevo Lead", count: 12, value: "$18,200", color: "bg-blue-500" },
-                { stage: "Contactado", count: 8, value: "$12,400", color: "bg-yellow-500" },
-                { stage: "Propuesta", count: 5, value: "$24,500", color: "bg-purple-500" },
-                { stage: "Negociación", count: 3, value: "$15,800", color: "bg-orange-500" },
-                { stage: "Cerrado", count: 7, value: "$32,100", color: "bg-green-500" },
-              ].map((pipeline) => (
-                <div key={pipeline.stage} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${pipeline.color}`} />
-                      <span className="text-sm font-medium">{pipeline.stage}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {setupSteps.map((step, index) => {
+                const isDone =
+                  (index === 0 && workspaces.length > 0) ||
+                  (index === 1 && !!activeWorkspace?.description) ||
+                  (index === 2 && usedAssets > 0);
+
+                return (
+                  <NextLink key={step.title} href={step.href}>
+                    <div className="h-full rounded-3xl border border-divider bg-content2/50 p-5 transition hover:border-primary/40 hover:bg-content2">
+                      <div className="flex items-start gap-3">
+                        <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl ${isDone ? "bg-success/15 text-success" : "bg-primary/10 text-primary"}`}>
+                          {isDone ? <CheckCircle2 size={18} /> : <span className="text-sm font-black">{index + 1}</span>}
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold">{step.title}</h3>
+                          <p className="mt-1 text-xs leading-relaxed text-default-500">{step.description}</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-default-400">
-                        {pipeline.count} deals
-                      </span>
-                      <span className="text-sm font-semibold">
-                        {pipeline.value}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="w-full bg-default-100 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full ${pipeline.color}`}
-                      style={{
-                        width: `${(pipeline.count / 12) * 100}%`,
-                      }}
-                    />
+                  </NextLink>
+                );
+              })}
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card className="border border-divider">
+          <CardBody className="gap-5 p-6">
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl bg-primary/10 p-3 text-primary">
+                <Building2 size={22} />
+              </div>
+              <div>
+                <h2 className="text-xl font-black">Workspace activo</h2>
+                <p className="text-sm text-default-500">La operación usa este contexto.</p>
+              </div>
+            </div>
+
+            {activeWorkspace ? (
+              <div className="rounded-3xl border border-divider bg-content2/50 p-5">
+                <div className="flex items-center gap-3">
+                  <span className="h-12 w-12 rounded-2xl" style={{ backgroundColor: activeWorkspace.color || "#2563EB" }} />
+                  <div className="min-w-0">
+                    <h3 className="font-black truncate">{activeWorkspace.name}</h3>
+                    <p className="text-xs text-default-500 truncate">/{activeWorkspace.slug}</p>
                   </div>
                 </div>
-              ))}
-            </CardBody>
-          </Card>
-        </motion.div>
+                <p className="mt-4 text-sm text-default-500">
+                  {activeWorkspace.description || "Completa los datos del workspace para que invoices, widgets y reportes tengan identidad de negocio."}
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-3xl border border-dashed border-divider bg-content2/50 p-6 text-center">
+                <Rocket className="mx-auto text-primary" size={30} />
+                <p className="mt-3 font-bold">Aún no hay workspace activo</p>
+                <p className="mt-1 text-sm text-default-500">Crea tu primera empresa para comenzar.</p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 gap-2">
+              <QuickAction href="/workspaces" icon={Building2} label="Administrar empresas/workspaces" />
+              <QuickAction href="/integrations" icon={Plug} label="Conectar canales del workspace" />
+              <QuickAction href="/contact-center" icon={Inbox} label="Ir al inbox operativo" />
+              <QuickAction href="/account" icon={BadgeCheck} label="Ver plan y cuenta" />
+            </div>
+          </CardBody>
+        </Card>
       </div>
     </motion.div>
+  );
+}
+
+function SummaryTile({ label, value, icon: Icon }: { label: string; value: string; icon: any }) {
+  return (
+    <div className="rounded-2xl border border-white/20 bg-content1/80 p-4 shadow-sm backdrop-blur">
+      <Icon className="text-primary" size={18} />
+      <p className="mt-3 text-xs text-default-500">{label}</p>
+      <p className="mt-1 text-2xl font-black">{value}</p>
+    </div>
+  );
+}
+
+function QuickAction({ href, icon: Icon, label }: { href: string; icon: any; label: string }) {
+  return (
+    <NextLink href={href}>
+      <div className="flex items-center justify-between rounded-2xl border border-divider px-4 py-3 transition hover:border-primary/40 hover:bg-content2">
+        <div className="flex items-center gap-3">
+          <Icon className="text-primary" size={18} />
+          <span className="text-sm font-semibold">{label}</span>
+        </div>
+        <ArrowRight className="text-default-400" size={16} />
+      </div>
+    </NextLink>
   );
 }

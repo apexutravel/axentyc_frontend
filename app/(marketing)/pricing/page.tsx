@@ -23,76 +23,98 @@ const fadeUp = (delay = 0) => ({
 
 const plans = [
   {
-    name: "Starter",
+    key: "free",
+    name: "Free",
     icon: Sparkles,
-    tagline: "Para empezar",
-    description: "Perfecto para validar tu flujo de ventas y conocer la plataforma.",
+    tagline: "Explora",
+    description: "Para conocer AXENTYC con límites básicos y sin tarjeta.",
     monthlyPrice: 0,
     yearlyPrice: 0,
     priceLabel: "Gratis",
-    period: "14 días",
-    cta: "Comenzar Gratis",
+    period: "siempre",
+    cta: "Crear Cuenta",
     popular: false,
     gradient: "from-blue-500 to-cyan-500",
     features: [
-      "1 usuario incluido",
-      "2 canales sociales",
-      "100 conversaciones/mes",
-      "50 contactos en CRM",
-      "Inbox omnichannel",
-      "Soporte por email",
+      "1 workspace",
+      "1 usuario",
+      "1 canal conectado",
+      "50 conversaciones/mes",
+      "Inbox básico",
+      "Branding AXENTYC",
     ],
   },
   {
+    key: "starter",
+    name: "Starter",
+    icon: Zap,
+    tagline: "Para empezar",
+    description: "Para negocios pequeños que centralizan sus conversaciones.",
+    monthlyPrice: 29,
+    yearlyPrice: 23,
+    priceLabel: null,
+    period: "/mes",
+    cta: "Probar Starter",
+    popular: false,
+    gradient: "from-cyan-500 to-blue-500",
+    features: [
+      "14 días de prueba",
+      "1 workspace",
+      "3 usuarios",
+      "3 canales conectados",
+      "500 conversaciones/mes",
+      "Meta básico: Messenger, Facebook e Instagram",
+      "Email, widget o WhatsApp según cupo",
+      "5 automatizaciones activas",
+    ],
+  },
+  {
+    key: "pro",
     name: "Pro",
     icon: Rocket,
     tagline: "Más vendido",
     description: "Para equipos que necesitan escalar rápido y cerrar más deals.",
-    monthlyPrice: 49,
-    yearlyPrice: 39,
+    monthlyPrice: 79,
+    yearlyPrice: 63,
     priceLabel: null,
-    period: "/mes por usuario",
-    cta: "Empezar Ahora",
+    period: "/mes",
+    cta: "Probar Pro",
     popular: true,
     gradient: "from-purple-500 to-pink-500",
     features: [
+      "14 días de prueba",
+      "5 workspaces",
       "Hasta 10 usuarios",
-      "4 canales sociales",
-      "Conversaciones ilimitadas",
-      "Contactos ilimitados",
+      "15 canales conectados",
+      "5,000 conversaciones/mes",
       "CRM completo (Leads + Deals)",
-      "Automatizaciones sin límite",
-      "Analytics y reportes",
-      "Pipeline de ventas visual",
-      "Asignación inteligente",
-      "IA para respuestas automáticas",
-      "Soporte prioritario 24/7",
+      "Automatizaciones",
+      "Reportes por workspace",
+      "Ideal para equipos en crecimiento",
     ],
   },
   {
-    name: "Enterprise",
+    key: "business",
+    name: "Business",
     icon: Building2,
-    tagline: "A tu medida",
-    description: "Solución completa para grandes organizaciones con necesidades avanzadas.",
-    monthlyPrice: 0,
-    yearlyPrice: 0,
-    priceLabel: "Custom",
-    period: "Contactar ventas",
-    cta: "Hablar con Ventas",
+    tagline: "Multi-marca",
+    description: "Para agencias, franquicias y operaciones con múltiples marcas.",
+    monthlyPrice: 199,
+    yearlyPrice: 159,
+    priceLabel: null,
+    period: "/mes",
+    cta: "Probar Business",
     popular: false,
     gradient: "from-orange-500 to-red-500",
     features: [
-      "Usuarios ilimitados",
-      "Todos los canales",
-      "Todo lo de Pro incluido",
-      "API completa + Webhooks",
-      "White-label personalizado",
-      "SSO / SAML",
-      "SLA garantizado 99.99%",
-      "Onboarding dedicado",
-      "Account manager personal",
-      "Integraciones custom",
-      "Soporte enterprise 24/7",
+      "14 días de prueba",
+      "25 workspaces",
+      "30 usuarios",
+      "75 canales conectados",
+      "White-label",
+      "25,000 conversaciones/mes",
+      "Permisos avanzados por workspace",
+      "Soporte prioritario",
     ],
   },
 ];
@@ -152,7 +174,7 @@ export default function PricingPage() {
         </motion.div>
 
         {/* Plans Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-16">
           {plans.map((plan, idx) => {
             const Icon = plan.icon;
             const price =
@@ -167,8 +189,8 @@ export default function PricingPage() {
               <motion.div key={plan.name} {...fadeUp(idx * 0.1)}>
                 <Card
                   className={`relative overflow-visible h-full group ${
-                    plan.popular
-                      ? "border-2 border-primary shadow-2xl shadow-primary/20 scale-105"
+                        plan.popular
+                          ? "border-2 border-primary shadow-2xl shadow-primary/20 xl:scale-105"
                       : "border border-divider hover:border-primary/30"
                   } transition-all duration-300`}
                 >
@@ -238,9 +260,7 @@ export default function PricingPage() {
                     {/* CTA */}
                     <NextLink
                       href={
-                        plan.name === "Enterprise"
-                          ? "/about"
-                          : `/auth/register?plan=${plan.name.toLowerCase()}&billing=${billing}`
+                        `/auth/register?plan=${plan.key}&billing=${billing}`
                       }
                     >
                       <Button
@@ -276,7 +296,8 @@ export default function PricingPage() {
         {/* Bottom Note */}
         <motion.div className="text-center max-w-2xl mx-auto" {...fadeUp(0.3)}>
           <p className="text-default-400 leading-relaxed">
-            Todos los planes incluyen SSL, backups diarios y soporte técnico.
+            Un canal conectado puede ser una página de Facebook, cuenta de Instagram,
+            WhatsApp, email o widget. Messenger y comentarios se incluyen dentro del canal Meta.
             <br />
             ¿Tienes dudas?{" "}
             <NextLink className="text-primary hover:underline font-semibold" href="/about">

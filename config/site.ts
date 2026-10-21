@@ -56,53 +56,108 @@ export const siteConfig = {
       label: "Dashboard",
       href: "/dashboard",
       icon: "LayoutDashboard",
+      group: "workspace",
     },
     {
       label: "Contact Center",
       href: "/contact-center",
       icon: "MessagesSquare",
+      group: "workspace",
     },
     {
-      label: "Contacts",
+      label: "Email",
+      href: "/inbox",
+      icon: "Inbox",
+      group: "workspace",
+    },
+    {
+      label: "CRM",
       href: "/contacts",
       icon: "Users",
+      group: "workspace",
+      children: [
+        {
+          label: "Contacts",
+          href: "/contacts",
+          icon: "Users",
+        },
+        {
+          label: "Leads",
+          href: "/leads",
+          icon: "UserPlus",
+        },
+        {
+          label: "Deals",
+          href: "/deals",
+          icon: "Handshake",
+        },
+      ],
     },
     {
-      label: "Leads",
-      href: "/leads",
-      icon: "UserPlus",
-    },
-    {
-      label: "Deals",
-      href: "/deals",
-      icon: "Handshake",
-    },
-    {
-      label: "Team",
-      href: "/team",
-      icon: "Users",
+      label: "Finance",
+      href: "/invoices",
+      icon: "ReceiptText",
+      group: "workspace",
+      children: [
+        {
+          label: "Quotes",
+          href: "/quotes",
+          icon: "FileText",
+        },
+        {
+          label: "Invoices",
+          href: "/invoices",
+          icon: "ReceiptText",
+        },
+        {
+          label: "Payments",
+          href: "/payments",
+          icon: "CreditCard",
+        },
+      ],
     },
     {
       label: "Automations",
       href: "/automations",
       icon: "Zap",
-    },
-    {
-      label: "Analytics",
-      href: "/analytics",
-      icon: "BarChart3",
+      group: "workspace",
     },
     {
       label: "Integrations",
       href: "/integrations",
       icon: "Plug",
+      group: "workspace",
     },
     {
-      label: "Settings",
-      href: "/settings",
-      icon: "Settings",
+      label: "Team",
+      href: "/team",
+      icon: "Users",
+      group: "admin",
     },
   ],
+  // Menu shown while the account has no workspace yet: only the user's own information
+  noWorkspaceSidebarItems: [
+    {
+      label: "Crear empresa",
+      href: "/workspaces",
+      icon: "Building2",
+      group: "account",
+    },
+    {
+      label: "Mi cuenta",
+      href: "/account",
+      icon: "User",
+      group: "account",
+    },
+    {
+      label: "Ajustes",
+      href: "/settings",
+      icon: "Settings",
+      group: "account",
+    },
+  ],
+  // Routes reachable without a workspace
+  noWorkspaceAllowedPaths: ["/workspaces", "/account", "/settings"],
   links: {
     website: "https://axentyc.apexucode.com",
     parent: "https://www.apexucode.com",

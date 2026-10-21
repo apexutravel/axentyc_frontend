@@ -53,9 +53,15 @@ import {
   CheckCircle2,
   AlertTriangle,
   Instagram,
+  Layers3,
+  Radio,
 } from "lucide-react";
 import { api } from "@/lib/api";
+import EmailAccountsSection from "@/components/integrations/EmailAccountsSection";
+import type { EmailAccount } from "@/lib/email-accounts";
 import { API_ENDPOINTS } from "@/config/api";
+import { BillingService } from "@/lib/billing";
+import { useWorkspaces } from "@/contexts/WorkspaceContext";
 
 interface WidgetConfig {
   _id?: string;
@@ -111,15 +117,9 @@ const otherIntegrations = [
   {
     name: "WhatsApp Business",
     description:
-      "Conecta tu cuenta de WhatsApp Business para enviar y recibir mensajes.",
+      "Conecta números de WhatsApp Business cuando esté disponible.",
     icon: "💬",
     status: "coming_soon" as const,
-  },
-  {
-    name: "Instagram",
-    description: "Gestiona mensajes directos y comentarios de Instagram.",
-    icon: "📸",
-    status: "available" as const,
   },
   {
     name: "TikTok",
@@ -145,6 +145,7 @@ const item = {
 };
 
 export default function IntegrationsPage() {
+  const { activeWorkspace } = useWorkspaces();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [config, setConfig] = useState<WidgetConfig>(defaultConfig);
   const [scriptCode, setScriptCode] = useState("");
@@ -159,52 +160,9 @@ export default function IntegrationsPage() {
   const fbGuide = useDisclosure();
   const [domainsInput, setDomainsInput] = useState("");
 
-  // --- Email Integration State ---
-  type EmailStatus = {
-    status: "connected" | "disconnected" | "error";
-    smtp?: { host?: string; port?: number; secure?: boolean; user?: string; fromName?: string; fromAddress?: string };
-    imap?: { host?: string; port?: number; secure?: boolean; user?: string };
-    lastError?: string | null;
-  };
-
-  type EmailForm = {
-    smtpHost: string;
-    smtpPort: number;
-    smtpSecure: boolean;
-    smtpUser: string;
-    smtpPass: string;
-    fromName?: string;
-    fromAddress?: string;
-    imapHost: string;
-    imapPort: number;
-    imapSecure: boolean;
-    imapUser: string;
-    imapPass: string;
-  };
-
-  const [emailDrawerOpen, setEmailDrawerOpen] = useState(false);
-  const [emailStatus, setEmailStatus] = useState<EmailStatus>({ status: "disconnected" });
-  const [emailForm, setEmailForm] = useState<EmailForm>({
-    smtpHost: "",
-    smtpPort: 587,
-    smtpSecure: false,
-    smtpUser: "",
-    smtpPass: "",
-    fromName: "",
-    fromAddress: "",
-    imapHost: "",
-    imapPort: 993,
-    imapSecure: true,
-    imapUser: "",
-    imapPass: "",
-  });
-  const [emailTesting, setEmailTesting] = useState(false);
-  const [emailConnecting, setEmailConnecting] = useState(false);
-  const [emailDisconnecting, setEmailDisconnecting] = useState(false);
-  const [emailDeleteConfirm, setEmailDeleteConfirm] = useState(false);
-  const [emailTestFeedback, setEmailTestFeedback] = useState<null | { smtpOk: boolean; imapOk: boolean; details?: any }>(null);
-  const [showSmtpPass, setShowSmtpPass] = useState(false);
-  const [showImapPass, setShowImapPass] = useState(false);
+  const [emailAccounts, setEmailAccounts] = useState<EmailAccount[]>([]);
+  const [connectedAssetsUsage, setConnectedAssetsUsage] = useState<{ total: number; socialAccounts: number; emailIntegrations: number; widgets: number } | null>(null);
+  const [connectedAssetsLimit, setConnectedAssetsLimit] = useState<number | null>(null);
 
   // --- Facebook Integration State ---
   type FbAccount = {
@@ -254,6 +212,18 @@ export default function IntegrationsPage() {
     }
   }, []);
 
+  const loadBillingUsage = useCallback(async () => {
+    try {
+      const res = await BillingService.subscription();
+      const data = (res as any)?.data ?? res;
+      setConnectedAssetsUsage(data?.usage?.connectedAssets || null);
+      setConnectedAssetsLimit(data?.plan?.limits?.maxConnectedAssets ?? null);
+    } catch {
+      setConnectedAssetsUsage(null);
+      setConnectedAssetsLimit(null);
+    }
+  }, []);
+
   const connectFacebook = async () => {
     if (!fbConfigExists) {
       toast.error('La integración de Facebook no está disponible. Contacta al administrador.');
@@ -297,6 +267,7 @@ export default function IntegrationsPage() {
       await api.post(API_ENDPOINTS.integrations.facebook.disconnect(fbDeleteConfirmId), {});
       toast.success("Facebook Messenger desconectado");
       await loadFacebookStatus();
+      await loadBillingUsage();
       setFbDeleteConfirmId(null);
     } catch (e: any) {
       toast.error(e?.response?.data?.message || "Error al desconectar");
@@ -344,228 +315,11 @@ export default function IntegrationsPage() {
     loadWidgetConfig();
   }, [loadWidgetConfig]);
 
-  // --- Load Email status ---
-  const loadEmailStatus = useCallback(async () => {
-    try {
-      const res = await api.get<EmailStatus>(API_ENDPOINTS.integrations.email.status);
-      const data = (res as any)?.data ?? res;
-      setEmailStatus(data as EmailStatus);
-      if (data && data.smtp && data.imap) {
-        setEmailForm((prev) => ({
-          ...prev,
-          smtpHost: data.smtp?.host || prev.smtpHost,
-          smtpPort: (data.smtp?.port as any) ?? prev.smtpPort,
-          smtpSecure: Boolean(data.smtp?.secure),
-          smtpUser: data.smtp?.user || prev.smtpUser,
-          smtpPass: data.status === 'connected' ? '••••••••' : prev.smtpPass,
-          fromName: data.smtp?.fromName || prev.fromName,
-          fromAddress: data.smtp?.fromAddress || prev.fromAddress,
-          imapHost: data.imap?.host || prev.imapHost,
-          imapPort: (data.imap?.port as any) ?? prev.imapPort,
-          imapSecure: Boolean(data.imap?.secure),
-          imapUser: data.imap?.user || prev.imapUser,
-          imapPass: data.status === 'connected' ? '••••••••' : prev.imapPass,
-        }));
-      }
-    } catch {
-      setEmailStatus({ status: "disconnected" });
-    }
-  }, []);
-
   useEffect(() => {
-    loadEmailStatus();
     loadFacebookConfig();
     loadFacebookStatus();
-  }, [loadEmailStatus, loadFacebookConfig, loadFacebookStatus]);
-
-  const updateEmailForm = (key: keyof EmailForm, value: any) => {
-    setEmailForm((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const openEmailDrawer = () => {
-    setEmailTestFeedback(null);
-    setEmailDrawerOpen(true);
-  };
-
-  const testSmtp = async () => {
-    setEmailTesting(true);
-    try {
-      // Build payload - don't send password if it's a placeholder (backend will use saved one)
-      const payload: any = {
-        smtpHost: emailForm.smtpHost,
-        smtpPort: emailForm.smtpPort,
-        smtpSecure: emailForm.smtpSecure,
-        smtpUser: emailForm.smtpUser,
-        fromName: emailForm.fromName,
-        fromAddress: emailForm.fromAddress,
-        imapHost: emailForm.imapHost,
-        imapPort: emailForm.imapPort,
-        imapSecure: emailForm.imapSecure,
-        imapUser: emailForm.imapUser,
-      };
-      
-      // Only include passwords if they were changed
-      if (emailForm.smtpPass && emailForm.smtpPass !== '••••••••') {
-        payload.smtpPass = emailForm.smtpPass;
-      }
-      if (emailForm.imapPass && emailForm.imapPass !== '••••••••') {
-        payload.imapPass = emailForm.imapPass;
-      }
-      
-      const res = await api.post(API_ENDPOINTS.integrations.email.testSmtp, payload);
-      const data = (res as any)?.data ?? res;
-      if (data?.smtp?.ok) {
-        toast.success("✓ SMTP funciona correctamente");
-      } else {
-        toast.error(`✗ SMTP falló: ${data?.smtp?.error || 'Error desconocido'}`);
-      }
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || "Error al probar SMTP");
-    } finally {
-      setEmailTesting(false);
-    }
-  };
-
-  const testImap = async () => {
-    setEmailTesting(true);
-    try {
-      // Build payload - don't send password if it's a placeholder (backend will use saved one)
-      const payload: any = {
-        smtpHost: emailForm.smtpHost,
-        smtpPort: emailForm.smtpPort,
-        smtpSecure: emailForm.smtpSecure,
-        smtpUser: emailForm.smtpUser,
-        fromName: emailForm.fromName,
-        fromAddress: emailForm.fromAddress,
-        imapHost: emailForm.imapHost,
-        imapPort: emailForm.imapPort,
-        imapSecure: emailForm.imapSecure,
-        imapUser: emailForm.imapUser,
-      };
-      
-      // Only include passwords if they were changed
-      if (emailForm.smtpPass && emailForm.smtpPass !== '••••••••') {
-        payload.smtpPass = emailForm.smtpPass;
-      }
-      if (emailForm.imapPass && emailForm.imapPass !== '••••••••') {
-        payload.imapPass = emailForm.imapPass;
-      }
-      
-      const res = await api.post(API_ENDPOINTS.integrations.email.testImap, payload);
-      const data = (res as any)?.data ?? res;
-      if (data?.imap?.ok) {
-        toast.success("✓ IMAP funciona correctamente");
-      } else {
-        toast.error(`✗ IMAP falló: ${data?.imap?.error || 'Error desconocido'}`);
-      }
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || "Error al probar IMAP");
-    } finally {
-      setEmailTesting(false);
-    }
-  };
-
-  const testEmail = async () => {
-    // Can't test with placeholder passwords
-    if (emailForm.smtpPass === '••••••••' || emailForm.imapPass === '••••••••') {
-      toast.error("Debes ingresar las contraseñas para probar la conexión");
-      return;
-    }
-    setEmailTesting(true);
-    setEmailTestFeedback(null);
-    try {
-      const res = await api.post(API_ENDPOINTS.integrations.email.test, emailForm);
-      const data = (res as any)?.data ?? res;
-      setEmailTestFeedback({ smtpOk: Boolean(data?.smtp?.ok), imapOk: Boolean(data?.imap?.ok), details: data });
-      if (data?.smtp?.ok && data?.imap?.ok) toast.success("Conexión SMTP/IMAP verificada");
-      else toast.warning("La prueba detectó problemas. Revisa los campos.");
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || "Error al probar conexión");
-    } finally {
-      setEmailTesting(false);
-    }
-  };
-
-  const connectEmail = async () => {
-    // Check if this is first time setup (no saved passwords) and passwords are missing
-    const hasSmtpPass = emailForm.smtpPass && emailForm.smtpPass !== '••••••••';
-    const hasImapPass = emailForm.imapPass && emailForm.imapPass !== '••••••••';
-    const isFirstSetup = emailStatus?.status !== 'connected';
-    
-    if (isFirstSetup && (!hasSmtpPass || !hasImapPass)) {
-      toast.error("Debes ingresar las contraseñas SMTP e IMAP para la primera configuración");
-      return;
-    }
-    
-    setEmailConnecting(true);
-    try {
-      // Build payload - don't include passwords if they are placeholders
-      const payload: any = {
-        smtpHost: emailForm.smtpHost,
-        smtpPort: emailForm.smtpPort,
-        smtpSecure: emailForm.smtpSecure,
-        smtpUser: emailForm.smtpUser,
-        fromName: emailForm.fromName,
-        fromAddress: emailForm.fromAddress,
-        imapHost: emailForm.imapHost,
-        imapPort: emailForm.imapPort,
-        imapSecure: emailForm.imapSecure,
-        imapUser: emailForm.imapUser,
-      };
-      
-      // Only include passwords if they were changed (not the placeholder)
-      if (hasSmtpPass) {
-        payload.smtpPass = emailForm.smtpPass;
-      }
-      if (hasImapPass) {
-        payload.imapPass = emailForm.imapPass;
-      }
-      
-      await api.post(API_ENDPOINTS.integrations.email.connect, payload);
-      toast.success("Integración de email conectada y guardada");
-      await loadEmailStatus();
-      setEmailDrawerOpen(false);
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || "Error al conectar";
-      toast.error(msg);
-      setEmailTestFeedback(e?.response?.data?.details || null);
-    } finally {
-      setEmailConnecting(false);
-    }
-  };
-
-  const disconnectEmail = async () => {
-    setEmailDeleteConfirm(true);
-  };
-
-  const confirmDisconnectEmail = async () => {
-    setEmailDisconnecting(true);
-    try {
-      await api.post(API_ENDPOINTS.integrations.email.disconnect, {});
-      toast.success("Integración de email desconectada");
-      // Reset email form to defaults
-      setEmailForm({
-        smtpHost: "",
-        smtpPort: 587,
-        smtpSecure: false,
-        smtpUser: "",
-        smtpPass: "",
-        fromName: "",
-        fromAddress: "",
-        imapHost: "",
-        imapPort: 993,
-        imapSecure: true,
-        imapUser: "",
-        imapPass: "",
-      });
-      await loadEmailStatus();
-      setEmailDeleteConfirm(false);
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || "Error al desconectar");
-    } finally {
-      setEmailDisconnecting(false);
-    }
-  };
+    loadBillingUsage();
+  }, [loadFacebookConfig, loadFacebookStatus, loadBillingUsage]);
 
   const openDrawer = () => {
     setSaveFeedback(null);
@@ -612,6 +366,7 @@ export default function IntegrationsPage() {
       toast.success(successMessage);
 
       await loadWidgetConfig();
+      await loadBillingUsage();
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message ||
@@ -648,6 +403,13 @@ export default function IntegrationsPage() {
     setConfig((prev) => ({ ...prev, [key]: value }));
   };
 
+  const connectedMetaChannels = fbStatus.accounts.filter((account) => account.status === "connected").length;
+  const connectedChannelsTotal = connectedAssetsUsage?.total ?? connectedMetaChannels + emailAccounts.filter((a) => a.status === "connected").length + (widgetExists ? 1 : 0);
+  const connectedChannelsLimit = connectedAssetsLimit ?? 0;
+  const usagePercent = connectedChannelsLimit > 0
+    ? Math.min((connectedChannelsTotal / connectedChannelsLimit) * 100, 100)
+    : 0;
+
   return (
     <motion.div
       animate="show"
@@ -656,51 +418,64 @@ export default function IntegrationsPage() {
       variants={container}
     >
       <motion.div variants={item}>
-        <h1 className="text-2xl font-bold">Integraciones</h1>
-        <p className="text-default-500 text-sm mt-1">
-          Conecta tus redes sociales y servicios externos.
-        </p>
+        <section className="relative overflow-hidden rounded-3xl border border-divider bg-gradient-to-br from-primary/15 via-content1 to-secondary/10 p-6 md:p-8">
+          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
+          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <Chip color="primary" startContent={<Radio size={14} />} variant="flat">
+                Canales del workspace
+              </Chip>
+              <h1 className="mt-4 text-3xl font-black tracking-tight md:text-4xl">Integraciones</h1>
+              <p className="mt-2 text-sm text-default-500 md:text-base">
+                Conecta los canales de comunicación de {activeWorkspace?.name || "este workspace"}: Facebook, Instagram, email y widget web. Cada canal conectado consume cupo del plan.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[620px]">
+              <ChannelStat label="Usados" value={`${connectedChannelsTotal}/${connectedChannelsLimit || "-"}`} />
+              <ChannelStat label="Social" value={String(connectedMetaChannels)} />
+              <ChannelStat label="Email" value={String(emailAccounts.filter((a) => a.status === "connected").length)} />
+              <ChannelStat label="Widget" value={widgetExists ? "1" : "0"} />
+            </div>
+          </div>
+          <div className="relative mt-6">
+            <div className="mb-2 flex items-center justify-between text-xs text-default-500">
+              <span>Cupo de canales conectados</span>
+              <span>{Math.round(usagePercent)}%</span>
+            </div>
+            <div className="h-3 overflow-hidden rounded-full bg-default-100">
+              <div className="h-full rounded-full bg-gradient-to-r from-primary to-secondary" style={{ width: `${usagePercent}%` }} />
+            </div>
+          </div>
+        </section>
+      </motion.div>
+
+      <motion.div className="flex items-center gap-3" variants={item}>
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <Layers3 size={20} />
+        </div>
+        <div>
+          <h2 className="text-lg font-black">Canales disponibles</h2>
+          <p className="text-sm text-default-500">Gestiona conexiones existentes sin cambiar la lógica que ya funciona.</p>
+        </div>
       </motion.div>
 
       <motion.div
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
         variants={item}
       >
-        {/* Email Integration Card */}
+        {/* Email accounts card (list is managed in a modal) */}
         <motion.div variants={item}>
-          <Card className="border border-divider h-full">
-            <CardBody className="gap-4">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="text-3xl"><Mail /></div>
-                  <div>
-                    <p className="text-sm font-semibold">Email (SMTP/IMAP)</p>
-                    <Chip
-                      color={emailStatus.status === 'connected' ? 'success' : emailStatus.status === 'error' ? 'danger' : 'default'}
-                      size="sm"
-                      startContent={emailStatus.status === 'connected' ? <Check size={10} /> : <Plug size={10} />}
-                      variant="flat"
-                    >
-                      {emailStatus.status === 'connected' ? 'Conectado' : emailStatus.status === 'error' ? 'Error' : 'Desconectado'}
-                    </Chip>
-                  </div>
-                </div>
-                {emailStatus.status === 'connected' && (
-                  <Button color="danger" size="sm" variant="flat" isLoading={emailDisconnecting} onPress={disconnectEmail}>
-                    Desconectar
-                  </Button>
-                )}
-              </div>
-              <p className="text-xs text-default-400">
-                Conecta tu cuenta SMTP/IMAP para enviar y recibir correos desde el Inbox.
-              </p>
-              <div className="mt-auto">
-                <Button color="primary" size="sm" onPress={openEmailDrawer}>
-                  {emailStatus.status === 'connected' ? 'Configurar' : 'Conectar'}
-                </Button>
-              </div>
-            </CardBody>
-          </Card>
+          <EmailAccountsSection
+            onChange={(accounts) => {
+              setEmailAccounts((prev) => {
+                // refresh plan usage only when the number of active mailboxes changed
+                const count = (list: EmailAccount[]) => list.filter((a) => a.status !== "disconnected").length;
+                if (count(prev) !== count(accounts)) loadBillingUsage();
+                return accounts;
+              });
+            }}
+          />
         </motion.div>
 
         {/* Facebook + Instagram Card */}
@@ -827,7 +602,7 @@ export default function IntegrationsPage() {
               })()}
 
               <p className="text-xs text-default-400">
-                Conecta tu página de Facebook para gestionar Messenger e Instagram DMs y comentarios desde tu CRM. Si tu página tiene Instagram vinculado, se conecta automáticamente.
+                Conecta páginas de Facebook e Instagram vinculados. Una página consume 1 canal; si tiene Instagram vinculado y se activa, consume otro canal. Messenger, DMs y comentarios quedan incluidos.
               </p>
               
               {!fbConfigExists && (
@@ -844,7 +619,7 @@ export default function IntegrationsPage() {
                   isDisabled={!fbConfigExists}
                   onPress={connectFacebook}
                 >
-                  {fbStatus.connected ? 'Agregar Página' : 'Conectar Página'}
+                  {fbStatus.connected ? 'Agregar canal' : 'Conectar Facebook'}
                 </Button>
               </div>
             </CardBody>
@@ -1163,16 +938,16 @@ export default function IntegrationsPage() {
                                   </p>
                                 </div>
                               </div>
-                              <div className="p-2.5 space-y-2 min-h-[120px]" style={{ background: '#f0f2f5' }}>
+                              <div className="p-2.5 space-y-2 min-h-[120px] bg-default-100">
                                 <div className="flex justify-start">
                                   <div className="flex flex-col gap-0.5 max-w-[90%]">
-                                    <div className="bg-white rounded-lg px-2.5 py-1.5">
-                                      <p className="text-[10px] text-gray-800">
+                                    <div className="bg-content1 rounded-lg px-2.5 py-1.5 shadow-sm">
+                                      <p className="text-[10px] text-foreground">
                                         {config.welcomeMessage ||
                                           "¡Hola! ¿En qué podemos ayudarte?"}
                                       </p>
                                     </div>
-                                    <span className="text-[8px] text-gray-500 px-1">10:30</span>
+                                    <span className="text-[8px] text-default-500 px-1">10:30</span>
                                   </div>
                                 </div>
                                 <div className="flex justify-end">
@@ -1183,7 +958,7 @@ export default function IntegrationsPage() {
                                       </p>
                                     </div>
                                     <div className="flex items-center gap-1 px-1">
-                                      <span className="text-[8px] text-gray-500">10:31</span>
+                                      <span className="text-[8px] text-default-500">10:31</span>
                                       <svg width="12" height="9" viewBox="0 0 16 11" fill="#53bdeb">
                                         <path d="M11.766.522A.75.75 0 0 0 10.732.5L6.232 5l-1.982-1.982a.75.75 0 0 0-1.06 1.06l2.5 2.5a.75.75 0 0 0 1.06 0l5-5a.75.75 0 0 0 .016-1.056zm3.5 0a.75.75 0 0 0-1.034-.022l-5 5a.75.75 0 0 0 1.06 1.06l5-5a.75.75 0 0 0-.026-1.038z"/>
                                       </svg>
@@ -1192,18 +967,18 @@ export default function IntegrationsPage() {
                                 </div>
                                 <div className="flex justify-start">
                                   <div className="flex flex-col gap-0.5 max-w-[90%]">
-                                    <div className="bg-white rounded-lg px-2.5 py-1.5">
-                                      <p className="text-[10px] text-gray-800">
+                                    <div className="bg-content1 rounded-lg px-2.5 py-1.5 shadow-sm">
+                                      <p className="text-[10px] text-foreground">
                                         Claro, estamos aquí para ayudarte
                                       </p>
                                     </div>
-                                    <span className="text-[8px] text-gray-500 px-1">10:32</span>
+                                    <span className="text-[8px] text-default-500 px-1">10:32</span>
                                   </div>
                                 </div>
                               </div>
                               {config.showBranding && (
-                                <div className="text-center py-1 bg-gray-50 border-t border-gray-100">
-                                  <p className="text-[8px] text-gray-400">
+                                <div className="text-center py-1 bg-content1 border-t border-divider">
+                                  <p className="text-[8px] text-default-400">
                                     Powered by <strong>AXENTYC</strong>
                                   </p>
                                 </div>
@@ -1463,117 +1238,6 @@ export default function IntegrationsPage() {
                   onPress={handleSave}
                 >
                   {widgetExists ? "Guardar Cambios" : "Crear Widget"}
-                </Button>
-              </DrawerFooter>
-            </>
-          )}
-        </DrawerContent>
-      </Drawer>
-
-      {/* ====================== EMAIL DRAWER ====================== */}
-      <Drawer isOpen={emailDrawerOpen} placement="right" size="lg" onOpenChange={setEmailDrawerOpen}>
-        <DrawerContent>
-          {(onClose) => (
-            <>
-              <DrawerHeader className="flex items-center justify-between border-b border-divider">
-                <div>
-                  <h2 className="text-lg font-bold">Configurar Email (SMTP/IMAP)</h2>
-                  <p className="text-xs text-default-500 font-normal">Credenciales por tenant. No afecta el SMTP del sistema.</p>
-                </div>
-              </DrawerHeader>
-              <DrawerBody>
-                {emailTestFeedback && (
-                  <div className={`mb-3 rounded-lg border px-3 py-2 text-sm ${emailTestFeedback.smtpOk && emailTestFeedback.imapOk ? 'border-success-200 bg-success-50 text-success-700' : 'border-danger-200 bg-danger-50 text-danger-700'}`}>
-                    {emailTestFeedback.smtpOk && emailTestFeedback.imapOk ? (
-                      '✓ Conexión verificada correctamente.'
-                    ) : (
-                      <div className="space-y-1">
-                        <p className="font-semibold">Errores de conexión:</p>
-                        {!emailTestFeedback.smtpOk && (
-                          <p className="text-xs">• SMTP: {emailTestFeedback.details?.smtp?.error || 'Falló la conexión'}</p>
-                        )}
-                        {!emailTestFeedback.imapOk && (
-                          <p className="text-xs">• IMAP: {emailTestFeedback.details?.imap?.error || 'Falló la conexión'}</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* SMTP */}
-                  <div className="space-y-3">
-                    <p className="text-sm font-semibold">SMTP (salida)</p>
-                    <Input label="Host" size="sm" variant="bordered" value={emailForm.smtpHost} onValueChange={(v) => updateEmailForm('smtpHost', v)} />
-                    <div className="grid grid-cols-2 gap-3">
-                      <Input type="number" label="Puerto" size="sm" variant="bordered" value={String(emailForm.smtpPort)} onValueChange={(v) => updateEmailForm('smtpPort', Number(v || 0))} />
-                      <div className="flex items-end">
-                        <Switch isSelected={emailForm.smtpSecure} size="sm" onValueChange={(v) => updateEmailForm('smtpSecure', v)}>TLS/SSL</Switch>
-                      </div>
-                    </div>
-                    <Input label="Usuario" size="sm" variant="bordered" value={emailForm.smtpUser} onValueChange={(v) => updateEmailForm('smtpUser', v)} />
-                    <Input
-                      label="Contraseña"
-                      type={showSmtpPass ? 'text' : 'password'}
-                      size="sm"
-                      variant="bordered"
-                      value={emailForm.smtpPass}
-                      onValueChange={(v) => updateEmailForm('smtpPass', v)}
-                      endContent={
-                        <button
-                          type="button"
-                          onClick={() => setShowSmtpPass(!showSmtpPass)}
-                          className="focus:outline-none"
-                        >
-                          {showSmtpPass ? <EyeOff size={16} className="text-default-400" /> : <Eye size={16} className="text-default-400" />}
-                        </button>
-                      }
-                    />
-                    <Input label="Nombre remitente (opcional)" size="sm" variant="bordered" value={emailForm.fromName || ''} onValueChange={(v) => updateEmailForm('fromName', v)} />
-                    <Input label="Email remitente (opcional)" size="sm" variant="bordered" value={emailForm.fromAddress || ''} onValueChange={(v) => updateEmailForm('fromAddress', v)} />
-                  </div>
-                  {/* IMAP */}
-                  <div className="space-y-3">
-                    <p className="text-sm font-semibold">IMAP (entrada)</p>
-                    <Input label="Host" size="sm" variant="bordered" value={emailForm.imapHost} onValueChange={(v) => updateEmailForm('imapHost', v)} />
-                    <div className="grid grid-cols-2 gap-3">
-                      <Input type="number" label="Puerto" size="sm" variant="bordered" value={String(emailForm.imapPort)} onValueChange={(v) => updateEmailForm('imapPort', Number(v || 0))} />
-                      <div className="flex items-end">
-                        <Switch isSelected={emailForm.imapSecure} size="sm" onValueChange={(v) => updateEmailForm('imapSecure', v)}>TLS/SSL</Switch>
-                      </div>
-                    </div>
-                    <Input label="Usuario" size="sm" variant="bordered" value={emailForm.imapUser} onValueChange={(v) => updateEmailForm('imapUser', v)} />
-                    <Input
-                      label="Contraseña"
-                      type={showImapPass ? 'text' : 'password'}
-                      size="sm"
-                      variant="bordered"
-                      value={emailForm.imapPass}
-                      onValueChange={(v) => updateEmailForm('imapPass', v)}
-                      endContent={
-                        <button
-                          type="button"
-                          onClick={() => setShowImapPass(!showImapPass)}
-                          className="focus:outline-none"
-                        >
-                          {showImapPass ? <EyeOff size={16} className="text-default-400" /> : <Eye size={16} className="text-default-400" />}
-                        </button>
-                      }
-                    />
-                  </div>
-                </div>
-              </DrawerBody>
-              <DrawerFooter className="border-t border-divider">
-                <Button variant="light" onPress={onClose}>Cerrar</Button>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="flat" color="secondary" isLoading={emailTesting} onPress={testSmtp}>
-                    Probar SMTP
-                  </Button>
-                  <Button size="sm" variant="flat" color="secondary" isLoading={emailTesting} onPress={testImap}>
-                    Probar IMAP
-                  </Button>
-                </div>
-                <Button color="primary" isLoading={emailConnecting} startContent={<Save size={14} />} onPress={connectEmail}>
-                  Guardar y Conectar
                 </Button>
               </DrawerFooter>
             </>
@@ -2163,42 +1827,15 @@ export default function IntegrationsPage() {
         </ModalContent>
       </Modal>
 
-      {/* ====================== EMAIL DELETE CONFIRMATION ====================== */}
-      <Modal isOpen={emailDeleteConfirm} onOpenChange={setEmailDeleteConfirm} size="sm">
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader className="border-b border-divider">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle size={20} className="text-warning" />
-                  <span>Confirmar desconexión</span>
-                </div>
-              </ModalHeader>
-              <ModalBody className="py-6">
-                <p className="text-sm text-default-700">
-                  ¿Estás seguro de que deseas desconectar la integración de email?
-                </p>
-                <p className="text-xs text-default-500 mt-2">
-                  Dejarás de recibir y enviar emails desde AXENTYC. Tendrás que volver a configurar SMTP e IMAP si deseas reconectar.
-                </p>
-              </ModalBody>
-              <ModalFooter className="border-t border-divider">
-                <Button variant="light" onPress={onClose}>
-                  Cancelar
-                </Button>
-                <Button 
-                  color="danger" 
-                  isLoading={emailDisconnecting}
-                  onPress={confirmDisconnectEmail}
-                  startContent={<Trash2 size={16} />}
-                >
-                  Desconectar
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
     </motion.div>
+  );
+}
+
+function ChannelStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/20 bg-content1/80 p-4 shadow-sm backdrop-blur">
+      <p className="text-xs text-default-500">{label}</p>
+      <p className="mt-1 text-2xl font-black">{value}</p>
+    </div>
   );
 }

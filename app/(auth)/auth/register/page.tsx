@@ -14,20 +14,25 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 const planInfo: Record<string, { name: string; color: "default" | "primary" | "secondary"; description: string }> = {
+  free: {
+    name: "Free",
+    color: "default",
+    description: "Para explorar con límites básicos",
+  },
   starter: {
     name: "Starter",
     color: "default",
-    description: "Prueba gratuita de 14 días",
+    description: "14 días de prueba · luego $29/mes",
   },
   pro: {
     name: "Pro",
     color: "primary",
-    description: "$49/mes por usuario",
+    description: "14 días de prueba · luego $79/mes",
   },
-  enterprise: {
-    name: "Enterprise",
+  business: {
+    name: "Business",
     color: "secondary",
-    description: "Plan personalizado",
+    description: "14 días de prueba · luego $199/mes",
   },
 };
 
@@ -35,7 +40,9 @@ function RegisterForm() {
   const router = useRouter();
   const { refreshUser } = useAuth();
   const searchParams = useSearchParams();
-  const selectedPlan = searchParams.get("plan") || "starter";
+  const requestedPlan = searchParams.get("plan") || "starter";
+  const selectedPlan = requestedPlan === "agency" ? "business" : requestedPlan;
+  const billingCycle = (searchParams.get("billing") === "yearly" ? "yearly" : "monthly") as "monthly" | "yearly";
   const plan = planInfo[selectedPlan] || planInfo.starter;
 
   const [isVisible, setIsVisible] = useState(false);
@@ -59,7 +66,11 @@ function RegisterForm() {
     setIsLoading(true);
 
     try {
-      await AuthService.register(formData);
+      await AuthService.register({
+        ...formData,
+        planKey: selectedPlan,
+        billingCycle,
+      });
       await refreshUser();
       toast.success("¡Cuenta creada exitosamente! Bienvenido a AXENTYC");
       router.push("/dashboard");
@@ -199,6 +210,7 @@ function RegisterForm() {
         </p>
 
         <input name="plan" type="hidden" value={selectedPlan} />
+        <input name="billingCycle" type="hidden" value={billingCycle} />
 
         <Button
           className="w-full"

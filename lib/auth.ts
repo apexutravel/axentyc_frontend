@@ -34,6 +34,8 @@ export interface RegisterData {
   lastName: string;
   companyName: string;
   companySlug?: string;
+  planKey?: string;
+  billingCycle?: 'monthly' | 'yearly';
 }
 
 export class AuthService {
@@ -184,5 +186,24 @@ export class AuthService {
         window.location.href = '/auth/login';
       }
     }
+  }
+
+  static async switchAccount(tenantId: string): Promise<User> {
+    const response = await fetch(API_ENDPOINTS.auth.switchAccount, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ tenantId }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Error al cambiar de cuenta' }));
+      throw new Error(error.message || error.error || `Error ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.user;
   }
 }

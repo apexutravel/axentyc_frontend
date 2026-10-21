@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState, useCallback, Re
 import { io, Socket } from "socket.io-client";
 import { WS_URL } from "@/config/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { AuthService } from "@/lib/auth";
 
 type EventHandler = (...args: any[]) => void;
 
@@ -61,6 +62,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
       // Re-apply all subscriptions on reconnect
       subsRef.current.forEach(({ event, handler }) => {
+        s.off(event, handler); // avoid duplicate listeners across reconnects
         s.on(event, handler);
       });
     });
@@ -69,6 +71,21 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       console.log("[Socket] ❌ Disconnected:", reason);
       setIsConnected(false);
       setTenantJoined(false);
+    });
+
+    // The server authenticates the handshake cookie. If the socket was opened before login
+    // (or the token expired) it asks us to refresh the session and reconnect.
+    let lastReauth = 0;
+    s.on("auth:error", async () => {
+      if (Date.now() - lastReauth < 15000) return;
+      lastReauth = Date.now();
+      try {
+        await AuthService.refresh();
+      } catch {
+        return;
+      }
+      s.disconnect();
+      s.connect();
     });
 
     s.on("connect_error", (err) => {

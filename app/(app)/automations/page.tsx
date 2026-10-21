@@ -79,11 +79,11 @@ export default function AutomationsPage() {
         <div>
           <h1 className="text-2xl font-bold">Automatizaciones</h1>
           <p className="text-default-500 text-sm mt-1">
-            Configura flujos automáticos para optimizar tu operación.
+            Procesos automáticos del workspace, preparados para reglas e IA que faciliten ventas, soporte y seguimiento.
           </p>
         </div>
         <Button color="primary" startContent={<Plus size={16} />}>
-          Nueva Automatización
+          Nueva automatización
         </Button>
       </div>
 

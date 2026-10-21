@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { MessageSquare, RefreshCw, ThumbsUp, Send, Smile, EyeOff, MoreHorizontal, Calendar, ExternalLink, User, Reply, Plus, TrendingUp, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
+import { API_URL } from '@/config/api';
 
 interface Comment {
   id: string;
@@ -60,7 +61,7 @@ export default function CommentsPage() {
 
   const fetchPages = async () => {
     try {
-      const data = await api.get(`${process.env.NEXT_PUBLIC_API_URL}/integrations/facebook/status`);
+      const data = await api.get(`${API_URL}/integrations/facebook/status`);
       if (data.data?.accounts) {
         const fbPages = data.data.accounts.filter((acc: any) => acc.platform === 'facebook' && acc.status === 'connected');
         setPages(fbPages);
@@ -80,7 +81,7 @@ export default function CommentsPage() {
     setLoading(true);
     try {
       const data = await api.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/integrations/facebook/feed?pageId=${selectedPage}&limit=20`
+        `${API_URL}/integrations/facebook/feed?pageId=${selectedPage}&limit=20`
       );
       if (data.data?.posts) {
         setPosts(data.data.posts);
@@ -102,7 +103,7 @@ export default function CommentsPage() {
     setSyncing(true);
     try {
       const data = await api.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/integrations/facebook/sync-comments`,
+        `${API_URL}/integrations/facebook/sync-comments`,
         { pageId: selectedPage }
       );
       if (data.data?.success) {
@@ -128,7 +129,7 @@ export default function CommentsPage() {
     setSendingReply(commentId);
     try {
       const data = await api.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/integrations/facebook/reply-comment`,
+        `${API_URL}/integrations/facebook/reply-comment`,
         { commentId, message: text }
       );
       
