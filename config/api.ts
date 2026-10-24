@@ -83,6 +83,7 @@ export const API_ENDPOINTS = {
     list: `${API_URL}/workspaces`,
     create: `${API_URL}/workspaces`,
     detail: (id: string) => `${API_URL}/workspaces/${id}`,
+    availability: `${API_URL}/workspaces/availability`,
     update: (id: string) => `${API_URL}/workspaces/${id}`,
     delete: (id: string) => `${API_URL}/workspaces/${id}`,
   },

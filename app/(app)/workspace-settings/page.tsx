@@ -24,7 +24,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useWorkspaces } from "@/contexts/WorkspaceContext";
-import { Workspace, WorkspaceService } from "@/lib/workspaces";
+import { Workspace, WorkspaceService, slugifyWorkspace } from "@/lib/workspaces";
+import { useWorkspaceAvailability } from "@/hooks/useWorkspaceAvailability";
 
 const workspaceTypes = [
   { key: "default", label: "Principal" },
@@ -43,15 +44,6 @@ const timezones = [
   "Europe/Madrid",
 ];
 const colors = ["#2563EB", "#7C3AED", "#DB2777", "#EA580C", "#059669", "#0891B2", "#111827"];
-
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "")
-    .replace(/-+/g, "-");
-}
 
 function buildForm(workspace?: Workspace | null) {
   return {
@@ -102,7 +94,9 @@ function buildForm(workspace?: Workspace | null) {
 export default function WorkspaceSettingsPage() {
   const { workspaces, activeWorkspace, activeWorkspaceId, setActiveWorkspaceId, refreshWorkspaces, isLoading } = useWorkspaces();
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState(buildForm(null));
+  const [form, setForm] = useState(() => buildForm(activeWorkspace));
+  const { result: availability, checking: checkingAvailability } = useWorkspaceAvailability(form.name, form.slug, activeWorkspaceId || undefined);
+  const unavailable = !!availability && (!availability.nameAvailable || !availability.slugAvailable);
 
   useEffect(() => {
     setForm(buildForm(activeWorkspace));
@@ -128,7 +122,7 @@ export default function WorkspaceSettingsPage() {
     try {
       await WorkspaceService.update(activeWorkspaceId, {
         ...form,
-        slug: slugify(form.slug || form.name),
+        slug: slugifyWorkspace(form.slug || form.name),
       } as Partial<Workspace>);
       await refreshWorkspaces();
       toast.success("Empresa/workspace actualizado");
@@ -159,14 +153,20 @@ export default function WorkspaceSettingsPage() {
             <Button isLoading={isLoading} startContent={<RefreshCw size={16} />} variant="flat" onPress={() => refreshWorkspaces()}>
               Actualizar
             </Button>
-            <Button color="primary" isLoading={saving} startContent={<Save size={16} />} onPress={saveWorkspace}>
+            <Button
+              color="primary"
+              isDisabled={!form.name.trim() || !form.slug || checkingAvailability || unavailable}
+              isLoading={saving}
+              startContent={<Save size={16} />}
+              onPress={saveWorkspace}
+            >
               Guardar cambios
             </Button>
           </div>
         </div>
       </section>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[280px_1fr] gap-6">
+      <div className="grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
         <Card className="border border-divider h-fit">
           <CardBody className="gap-3 p-4">
             <p className="px-2 text-xs font-black uppercase tracking-[0.18em] text-default-400">Workspaces</p>
@@ -192,12 +192,31 @@ export default function WorkspaceSettingsPage() {
           </CardBody>
         </Card>
 
-        <Tabs classNames={{ tabList: "bg-content1 border border-divider p-1", cursor: "bg-primary" }} radius="full" variant="light">
+        <div className="min-w-0 max-w-full overflow-hidden">
+        <Tabs classNames={{ base: "min-w-0 max-w-full", tabList: "max-w-full overflow-x-auto bg-content1 border border-divider p-1", cursor: "bg-primary" }} radius="full" variant="light">
           <Tab key="business" title="Negocio">
             <SettingsCard icon={Building2} title="Información del negocio" description="Datos principales que identifican la empresa dentro de AXENTYC.">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input label="Nombre del negocio" value={form.name} variant="bordered" onChange={(event) => updateForm("name", event.target.value)} />
-                <Input label="Slug" value={form.slug} variant="bordered" onChange={(event) => updateForm("slug", slugify(event.target.value))} />
+                <Input
+                  label="Nombre del negocio"
+                  value={form.name}
+                  variant="bordered"
+                  description={checkingAvailability ? "Comprobando nombre..." : availability?.nameAvailable ? "Nombre disponible" : undefined}
+                  errorMessage={availability && !availability.nameAvailable ? "Este nombre ya está en uso" : undefined}
+                  isInvalid={!!availability && !availability.nameAvailable}
+                  maxLength={100}
+                  onChange={(event) => updateForm("name", event.target.value)}
+                />
+                <Input
+                  label="Slug"
+                  value={form.slug}
+                  variant="bordered"
+                  description={checkingAvailability ? "Comprobando slug..." : availability?.slugAvailable ? `Disponible: /${availability.slug}` : "Solo letras, números y guiones"}
+                  errorMessage={availability && !availability.slugAvailable ? "Este slug ya está en uso" : undefined}
+                  isInvalid={!!availability && !availability.slugAvailable}
+                  maxLength={100}
+                  onChange={(event) => updateForm("slug", slugifyWorkspace(event.target.value))}
+                />
                 <Select label="Tipo" selectedKeys={[form.type]} variant="bordered" onSelectionChange={(keys) => {
                   const next = Array.from(keys)[0] as Workspace["type"];
                   if (next) updateForm("type", next);
@@ -300,6 +319,7 @@ export default function WorkspaceSettingsPage() {
             </SettingsCard>
           </Tab>
         </Tabs>
+        </div>
       </div>
     </motion.div>
   );

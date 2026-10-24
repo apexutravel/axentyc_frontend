@@ -45,10 +45,32 @@ export interface Workspace {
   isActive: boolean;
 }
 
+export interface WorkspaceAvailability {
+  name: string;
+  slug: string;
+  nameAvailable: boolean;
+  slugAvailable: boolean;
+}
+
+export function slugifyWorkspace(value: string) {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 export const WorkspaceService = {
   list: () => api.get<Workspace[]>(API_ENDPOINTS.workspaces.list),
   create: (data: Partial<Workspace>) => api.post<Workspace>(API_ENDPOINTS.workspaces.create, data),
   update: (id: string, data: Partial<Workspace>) => api.patch<Workspace>(API_ENDPOINTS.workspaces.update(id), data),
+  availability: (name: string, slug: string, excludeId?: string) => {
+    const params = new URLSearchParams({ name, slug });
+    if (excludeId) params.set('excludeId', excludeId);
+    return api.get<WorkspaceAvailability>(`${API_ENDPOINTS.workspaces.availability}?${params}`);
+  },
   remove: (id: string) => api.delete<void>(API_ENDPOINTS.workspaces.delete(id)),
   myAccess: () => api.get(API_ENDPOINTS.memberships.myWorkspaces),
 };

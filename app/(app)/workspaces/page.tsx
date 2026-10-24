@@ -12,7 +12,8 @@ import { motion } from "framer-motion";
 import { ArrowRight, Building2, CheckCircle2, Plus, Settings, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useWorkspaces } from "@/contexts/WorkspaceContext";
-import { Workspace, WorkspaceService } from "@/lib/workspaces";
+import { Workspace, WorkspaceService, slugifyWorkspace } from "@/lib/workspaces";
+import { useWorkspaceAvailability } from "@/hooks/useWorkspaceAvailability";
 
 const workspaceTypes = [
   { key: "default", label: "Principal" },
@@ -23,19 +24,11 @@ const workspaceTypes = [
 
 const colors = ["#2563EB", "#7C3AED", "#DB2777", "#EA580C", "#059669", "#0891B2", "#111827"];
 
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "")
-    .replace(/-+/g, "-");
-}
-
 export default function WorkspacesPage() {
   const router = useRouter();
   const { workspaces, activeWorkspaceId, setActiveWorkspaceId, refreshWorkspaces, isLoading, hasWorkspace, canManage } = useWorkspaces();
   const [creating, setCreating] = useState(false);
+  const [slugTouched, setSlugTouched] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
@@ -44,6 +37,8 @@ export default function WorkspacesPage() {
     type: "brand" as Workspace["type"],
     color: colors[0],
   });
+  const { result: availability, checking: checkingAvailability } = useWorkspaceAvailability(form.name, form.slug);
+  const unavailable = !!availability && (!availability.nameAvailable || !availability.slugAvailable);
 
   const createWorkspace = async () => {
     if (!form.name.trim()) {
@@ -53,11 +48,12 @@ export default function WorkspacesPage() {
 
     setCreating(true);
     try {
-      const created = await WorkspaceService.create({ ...form, slug: form.slug || slugify(form.name) });
+      const created = await WorkspaceService.create({ ...form, slug: form.slug || slugifyWorkspace(form.name) });
       const normalized = ((created as any)?.data ?? created) as Workspace;
       await refreshWorkspaces();
       if (normalized?._id) setActiveWorkspaceId(normalized._id);
       setForm({ name: "", slug: "", description: "", type: "brand", color: colors[0] });
+      setSlugTouched(false);
       toast.success("Empresa/workspace creado");
       router.push("/workspace-settings");
     } catch (error: any) {
@@ -215,9 +211,26 @@ export default function WorkspacesPage() {
           <CardBody className="gap-4">
             <Input label="Nombre" value={form.name} variant="bordered" onChange={(event) => {
               const name = event.target.value;
-              setForm((prev) => ({ ...prev, name, slug: prev.slug ? prev.slug : slugify(name) }));
-            }} />
-            <Input label="Slug" value={form.slug} variant="bordered" onChange={(event) => setForm((prev) => ({ ...prev, slug: slugify(event.target.value) }))} />
+              setForm((prev) => ({ ...prev, name, slug: slugTouched ? prev.slug : slugifyWorkspace(name) }));
+            }}
+              description={checkingAvailability ? "Comprobando nombre..." : availability?.nameAvailable ? "Nombre disponible" : undefined}
+              errorMessage={availability && !availability.nameAvailable ? "Este nombre ya está en uso" : undefined}
+              isInvalid={!!availability && !availability.nameAvailable}
+              maxLength={100}
+            />
+            <Input
+              label="Slug"
+              value={form.slug}
+              variant="bordered"
+              description={checkingAvailability ? "Comprobando slug..." : availability?.slugAvailable ? `Disponible: /${availability.slug}` : "Se genera automáticamente sin espacios"}
+              errorMessage={availability && !availability.slugAvailable ? "Este slug ya está en uso" : undefined}
+              isInvalid={!!availability && !availability.slugAvailable}
+              maxLength={100}
+              onChange={(event) => {
+                setSlugTouched(true);
+                setForm((prev) => ({ ...prev, slug: slugifyWorkspace(event.target.value) }));
+              }}
+            />
             <Select label="Tipo" selectedKeys={[form.type]} variant="bordered" onSelectionChange={(keys) => {
               const next = Array.from(keys)[0] as Workspace["type"];
               if (next) setForm((prev) => ({ ...prev, type: next }));
@@ -233,7 +246,13 @@ export default function WorkspacesPage() {
               </div>
             </div>
             <Textarea label="Descripción" minRows={3} value={form.description} variant="bordered" onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))} />
-            <Button color="primary" isLoading={creating} startContent={<Plus size={16} />} onPress={createWorkspace}>
+            <Button
+              color="primary"
+              isDisabled={!form.name.trim() || !form.slug || checkingAvailability || unavailable}
+              isLoading={creating}
+              startContent={<Plus size={16} />}
+              onPress={createWorkspace}
+            >
               {hasWorkspace ? "Crear y configurar" : "Crear mi primera empresa"}
             </Button>
           </CardBody>
