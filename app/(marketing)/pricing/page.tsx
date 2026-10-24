@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Button } from "@heroui/button";
 import { Card, CardBody } from "@heroui/card";
 import NextLink from "next/link";
+import { useEffect } from "react";
+import { BillingService, PlanDefinition } from "@/lib/billing";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Check,
@@ -21,106 +23,44 @@ const fadeUp = (delay = 0) => ({
   transition: { duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] },
 });
 
-const plans = [
-  {
-    key: "free",
-    name: "Free",
-    icon: Sparkles,
-    tagline: "Explora",
-    description: "Para conocer AXENTYC con límites básicos y sin tarjeta.",
-    monthlyPrice: 0,
-    yearlyPrice: 0,
-    priceLabel: "Gratis",
-    period: "siempre",
-    cta: "Crear Cuenta",
-    popular: false,
-    gradient: "from-blue-500 to-cyan-500",
-    features: [
-      "1 workspace",
-      "1 usuario",
-      "1 canal conectado",
-      "50 conversaciones/mes",
-      "Inbox básico",
-      "Branding AXENTYC",
-    ],
-  },
-  {
-    key: "starter",
-    name: "Starter",
-    icon: Zap,
-    tagline: "Para empezar",
-    description: "Para negocios pequeños que centralizan sus conversaciones.",
-    monthlyPrice: 29,
-    yearlyPrice: 23,
-    priceLabel: null,
-    period: "/mes",
-    cta: "Probar Starter",
-    popular: false,
-    gradient: "from-cyan-500 to-blue-500",
-    features: [
-      "14 días de prueba",
-      "1 workspace",
-      "3 usuarios",
-      "3 canales conectados",
-      "500 conversaciones/mes",
-      "Meta básico: Messenger, Facebook e Instagram",
-      "Email, widget o WhatsApp según cupo",
-      "5 automatizaciones activas",
-    ],
-  },
-  {
-    key: "pro",
-    name: "Pro",
-    icon: Rocket,
-    tagline: "Más vendido",
-    description: "Para equipos que necesitan escalar rápido y cerrar más deals.",
-    monthlyPrice: 79,
-    yearlyPrice: 63,
-    priceLabel: null,
-    period: "/mes",
-    cta: "Probar Pro",
-    popular: true,
-    gradient: "from-purple-500 to-pink-500",
-    features: [
-      "14 días de prueba",
-      "5 workspaces",
-      "Hasta 10 usuarios",
-      "15 canales conectados",
-      "5,000 conversaciones/mes",
-      "CRM completo (Leads + Deals)",
-      "Automatizaciones",
-      "Reportes por workspace",
-      "Ideal para equipos en crecimiento",
-    ],
-  },
-  {
-    key: "business",
-    name: "Business",
-    icon: Building2,
-    tagline: "Multi-marca",
-    description: "Para agencias, franquicias y operaciones con múltiples marcas.",
-    monthlyPrice: 199,
-    yearlyPrice: 159,
-    priceLabel: null,
-    period: "/mes",
-    cta: "Probar Business",
-    popular: false,
-    gradient: "from-orange-500 to-red-500",
-    features: [
-      "14 días de prueba",
-      "25 workspaces",
-      "30 usuarios",
-      "75 canales conectados",
-      "White-label",
-      "25,000 conversaciones/mes",
-      "Permisos avanzados por workspace",
-      "Soporte prioritario",
-    ],
-  },
-];
+/** Visual identity per plan. Content (prices, limits, bullets) always comes from the API. */
+const PLAN_VISUALS: Record<string, { icon: typeof Sparkles; gradient: string }> = {
+  free: { icon: Sparkles, gradient: "from-blue-500 to-cyan-500" },
+  starter: { icon: Zap, gradient: "from-cyan-500 to-blue-500" },
+  pro: { icon: Rocket, gradient: "from-purple-500 to-pink-500" },
+  agency: { icon: Building2, gradient: "from-orange-500 to-red-500" },
+};
 
 export default function PricingPage() {
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
+  const [apiPlans, setApiPlans] = useState<PlanDefinition[] | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    BillingService.plans()
+      .then((res) => setApiPlans((((res as any)?.data ?? res) as PlanDefinition[]) || []))
+      .catch(() => setFailed(true));
+  }, []);
+
+  const plans = (apiPlans || []).map((plan) => {
+    const visual = PLAN_VISUALS[plan.key] || PLAN_VISUALS.starter;
+    const free = plan.monthlyPrice === 0;
+    return {
+      key: plan.key,
+      name: plan.name,
+      icon: visual.icon,
+      gradient: visual.gradient,
+      tagline: plan.tagline,
+      description: plan.description,
+      monthlyPrice: plan.monthlyPrice,
+      yearlyPrice: plan.yearlyPrice,
+      priceLabel: free ? "Gratis" : null,
+      period: free ? "sin vencimiento" : "/mes",
+      cta: free ? "Crear cuenta gratis" : `Probar ${plan.trialDays} días gratis`,
+      popular: !!plan.recommended,
+      features: plan.highlights,
+    };
+  });
 
   return (
     <div className="relative min-h-screen">
@@ -142,7 +82,7 @@ export default function PricingPage() {
           </h1>
 
           <p className="text-xl text-default-400 mb-12">
-            Sin contratos largos. Sin costos ocultos. Cancela cuando quieras.
+            Prueba cualquier plan de pago 14 días gratis, sin tarjeta. Sin contratos largos. Cancela cuando quieras.
           </p>
 
           {/* Billing Toggle */}
@@ -174,6 +114,12 @@ export default function PricingPage() {
         </motion.div>
 
         {/* Plans Grid */}
+        {!apiPlans && !failed && (
+          <p className="mb-16 text-center text-default-400">Cargando planes…</p>
+        )}
+        {failed && (
+          <p className="mb-16 text-center text-default-400">No pudimos cargar los planes. Intenta de nuevo en unos minutos.</p>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-16">
           {plans.map((plan, idx) => {
             const Icon = plan.icon;
@@ -296,8 +242,8 @@ export default function PricingPage() {
         {/* Bottom Note */}
         <motion.div className="text-center max-w-2xl mx-auto" {...fadeUp(0.3)}>
           <p className="text-default-400 leading-relaxed">
-            Un canal conectado puede ser una página de Facebook, cuenta de Instagram,
-            WhatsApp, email o widget. Messenger y comentarios se incluyen dentro del canal Meta.
+            Un canal conectado es una página de Facebook, una cuenta de Instagram, un buzón de email o un widget web.
+            Si superas los límites de tu plan puedes mejorarlo en cualquier momento; al cambiar se prorratean los cargos.
             <br />
             ¿Tienes dudas?{" "}
             <NextLink className="text-primary hover:underline font-semibold" href="/about">

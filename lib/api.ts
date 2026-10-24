@@ -14,6 +14,13 @@ const WORKSPACE_SCOPED_PATHS = [
   '/emails',
   '/integrations',
   '/leads',
+  '/tasks',
+  '/notes',
+  '/quick-replies',
+  '/activities',
+  '/sales-documents',
+  '/products',
+  '/reports',
 ];
 
 // Every company-level route is scoped to the active workspace (Meta channels included)
@@ -122,6 +129,12 @@ export async function apiFetch<T = any>(
     };
     apiError.status = response.status;
     (apiError as any).code = (error as any).code;
+    // Payment / plan problems: surface them globally (banner + toast with an upgrade action)
+    if (typeof window !== 'undefined' && (response.status === 402 || (error as any).code === 'PLAN_LIMIT_REACHED')) {
+      window.dispatchEvent(
+        new CustomEvent('axentyc:billing-blocked', { detail: { code: (error as any).code, message, status: response.status } }),
+      );
+    }
     if (response.status === 403 && ((error as any).code === 'WORKSPACE_REQUIRED' || (error as any).code === 'WORKSPACE_FORBIDDEN') && typeof window !== 'undefined') {
       // The selected workspace is no longer valid: let the workspace context resync
       window.dispatchEvent(new CustomEvent('axentyc:workspace-invalid'));

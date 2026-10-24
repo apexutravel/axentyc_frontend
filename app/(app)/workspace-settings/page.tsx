@@ -87,6 +87,10 @@ function buildForm(workspace?: Workspace | null) {
       invoiceTerms: workspace?.documentSettings?.invoiceTerms || "",
       paymentTerms: workspace?.documentSettings?.paymentTerms || "",
       footerNote: workspace?.documentSettings?.footerNote || "",
+      language: workspace?.documentSettings?.language || "es",
+      invoicePrefix: workspace?.documentSettings?.invoicePrefix || "INV",
+      quotePrefix: workspace?.documentSettings?.quotePrefix || "QUO",
+      paymentDays: workspace?.documentSettings?.paymentDays || "15",
     },
     businessHours: {
       enabled: workspace?.businessHours?.enabled ?? false,
@@ -252,6 +256,13 @@ export default function WorkspaceSettingsPage() {
                   </div>
                   <Switch isSelected={form.taxSettings.taxIncluded} onValueChange={(value) => updateNested("taxSettings", "taxIncluded", value)} />
                 </div>
+                <Select label="Idioma de los documentos" selectedKeys={[form.documentSettings.language]} variant="bordered" onSelectionChange={(keys) => { const next = Array.from(keys)[0] as string; if (next) updateNested("documentSettings", "language", next); }}>
+                  <SelectItem key="es">Español</SelectItem>
+                  <SelectItem key="en">English</SelectItem>
+                </Select>
+                <Input label="Días para pagar (vencimiento)" type="number" value={String(form.documentSettings.paymentDays)} variant="bordered" onChange={(event) => updateNested("documentSettings", "paymentDays", String(Math.max(0, Math.min(365, Number(event.target.value || 0)))))} />
+                <Input label="Prefijo de facturas" maxLength={8} value={form.documentSettings.invoicePrefix} variant="bordered" onChange={(event) => updateNested("documentSettings", "invoicePrefix", event.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""))} />
+                <Input label="Prefijo de cotizaciones" maxLength={8} value={form.documentSettings.quotePrefix} variant="bordered" onChange={(event) => updateNested("documentSettings", "quotePrefix", event.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""))} />
                 <Textarea className="md:col-span-2" label="Términos de cotización" minRows={3} value={form.documentSettings.quoteTerms} variant="bordered" onChange={(event) => updateNested("documentSettings", "quoteTerms", event.target.value)} />
                 <Textarea className="md:col-span-2" label="Términos de invoice" minRows={3} value={form.documentSettings.invoiceTerms} variant="bordered" onChange={(event) => updateNested("documentSettings", "invoiceTerms", event.target.value)} />
                 <Textarea className="md:col-span-2" label="Términos de pago" minRows={2} value={form.documentSettings.paymentTerms} variant="bordered" onChange={(event) => updateNested("documentSettings", "paymentTerms", event.target.value)} />

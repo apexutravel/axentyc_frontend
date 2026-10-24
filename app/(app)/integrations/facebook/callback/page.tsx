@@ -69,7 +69,7 @@ export default function FacebookCallbackPage() {
   const exchangeToken = async (code: string, state?: string) => {
     try {
       const redirectUri = `${window.location.origin}/integrations/facebook/callback`;
-      console.log('[FB Callback] Exchanging code, redirectUri:', redirectUri);
+      
 
       const [res, billingRes] = await Promise.all([
         api.post<any>(API_ENDPOINTS.integrations.facebook.exchangeToken, {

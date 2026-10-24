@@ -54,8 +54,6 @@ self.addEventListener('message', (event) => {
 
 // Background message handler
 messaging.onBackgroundMessage((payload) => {
-  console.log('[SW] Background message received:', payload);
-
   const convId = payload?.data?.conversationId;
 
   // Helper to decide suppression based on current windows
@@ -77,7 +75,6 @@ messaging.onBackgroundMessage((payload) => {
 
   return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
     if (shouldSuppress(list)) {
-      console.log('[SW] ✅ SUPPRESSED (active conversation visible):', convId);
       return;
     }
 

@@ -63,6 +63,8 @@ import {
 import { api } from "@/lib/api";
 import { API_ENDPOINTS, API_URL } from "@/config/api";
 import { useWorkspaces } from "@/contexts/WorkspaceContext";
+import ActivityPanel from "@/components/crm/ActivityPanel";
+import QuickReplyButton, { useQuickReplies } from "@/components/crm/QuickReplies";
 import { useSocket } from "@/hooks/useSocket";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotificationCenter } from "@/contexts/NotificationCenterContext";
@@ -282,6 +284,7 @@ export default function ContactCenterPage() {
   const { tenant } = useAuth();
   const { markConversationRead, setActiveConversationId } = useNotificationCenter();
   const { activeWorkspaceId } = useWorkspaces();
+  const { replies: quickReplies, expand: expandQuickReply } = useQuickReplies();
   const [activeTab, setActiveTab] = useState("all");
   const tabTheme = getTabTheme(activeTab);
   
@@ -1023,7 +1026,7 @@ export default function ContactCenterPage() {
           const exists = prev.find((c) => c._id === data._id);
           if (!exists) {
             // Conversation not in list yet, add it immediately
-            console.log("[LiveChat] Adding new conversation from conversation.updated event");
+            void 0;
             return [data, ...prev];
           }
           // Update existing conversation in list
@@ -1057,7 +1060,7 @@ export default function ContactCenterPage() {
     };
 
     const handleStatusUpdated = (data: any) => {
-      console.log("[LiveChat] message.status.updated:", data);
+      
       if (data.status === "failed" && data.messageId) {
         setMessages((prev) =>
           prev.map((m) => (m._id === data.messageId ? { ...m, status: "failed" } : m))
@@ -1078,7 +1081,7 @@ export default function ContactCenterPage() {
     };
 
     const handleContactEnriched = (data: any) => {
-      console.log("[LiveChat] contact.enriched:", data);
+      
       if (selectedConv && data.conversationId === selectedConv._id && data.data) {
         setSelectedConv((prev) =>
           prev ? { ...prev, contactId: { ...prev.contactId, ...data.data } } : prev
@@ -1726,6 +1729,8 @@ export default function ContactCenterPage() {
 
   const isFbCommentsTab = activeTab === 'fb-comments';
   const isIgCommentsTab = activeTab === 'ig-comments';
+  // Small screens show one pane at a time: the list, or the open chat / post
+  const mobileDetail = isFbCommentsTab ? !!selectedFbPost : !!selectedConv;
 
   return (
     <div className="h-[calc(100dvh-4rem)] min-h-0 flex flex-col overflow-hidden bg-gradient-to-br from-default-50 via-content1 to-default-100 -m-6">
@@ -1776,7 +1781,7 @@ export default function ContactCenterPage() {
       {/* Content Area */}
       <div className="flex-1 min-h-0 flex gap-0 overflow-hidden p-3 pt-2.5">
       {/* Conversation List / Posts List */}
-      <div className={`w-[360px] min-h-0 border flex flex-col rounded-l-3xl shadow-sm overflow-hidden transition-colors duration-300 ${tabTheme.panel}`}>
+      <div className={`${mobileDetail ? "hidden md:flex" : "flex"} w-full md:w-[360px] min-h-0 border flex-col rounded-3xl md:rounded-l-3xl md:rounded-r-none shadow-sm overflow-hidden transition-colors duration-300 ${tabTheme.panel}`}>
         <div className={`shrink-0 p-4 border-b space-y-3 transition-colors duration-300 ${tabTheme.header}`}>
           <div className="flex items-center justify-between">
             <div>
@@ -2041,7 +2046,16 @@ export default function ContactCenterPage() {
       </div>
 
       {/* Chat Area / Post Detail */}
-      <div className="flex-1 min-h-0 flex flex-col bg-content1/95 border-y border-r border-divider/70 overflow-hidden shadow-sm">
+      <div className={`${mobileDetail ? "flex" : "hidden md:flex"} flex-1 min-h-0 flex-col bg-content1/95 border border-divider/70 md:border-l-0 rounded-3xl md:rounded-none overflow-hidden shadow-sm`}>
+        {mobileDetail && (
+          <button
+            className="flex shrink-0 items-center gap-1 border-b border-divider/70 px-4 py-2 text-sm font-medium text-primary md:hidden"
+            type="button"
+            onClick={() => (isFbCommentsTab ? setSelectedFbPost(null) : setSelectedConv(null))}
+          >
+            ← Volver a la lista
+          </button>
+        )}
         {isFbCommentsTab ? (
           // Facebook Comments View
           !selectedFbPost ? (
@@ -2572,8 +2586,9 @@ export default function ContactCenterPage() {
                   >
                     <ImageIcon size={16} />
                   </Button>
+                  <QuickReplyButton replies={quickReplies} onPick={(body) => setMessageInput(body)} />
                   <Input
-                    placeholder="Escribe un mensaje..."
+                    placeholder="Escribe un mensaje... (usa /atajo para respuestas rápidas)"
                     size="sm"
                     variant="bordered"
                     radius="full"
@@ -2581,6 +2596,12 @@ export default function ContactCenterPage() {
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();
+                        // "/atajo" + Enter expands the saved reply so the agent can review it before sending
+                        const expanded = expandQuickReply(messageInput);
+                        if (expanded) {
+                          setMessageInput(expanded);
+                          return;
+                        }
                         sendMessage();
                       }
                     }}
@@ -2621,10 +2642,11 @@ export default function ContactCenterPage() {
 
       {/* Contact Panel */}
       {showContactPanel && selectedConv && (
-        <div className="w-80 min-h-0 border-y border-r border-divider/70 flex flex-col bg-content1/95 overflow-hidden rounded-r-3xl shadow-sm">
+        <div className="fixed inset-0 z-50 flex min-h-0 w-full flex-col overflow-hidden bg-content1 md:static md:z-auto md:w-80 md:border-y md:border-r md:border-divider/70 md:bg-content1/95 md:rounded-r-3xl md:shadow-sm">
           <div className="shrink-0 p-3 border-b border-divider/70 bg-content1/90">
             <div className="flex items-center justify-between gap-2 mb-3">
               <h3 className="text-sm font-bold">Información del contacto</h3>
+              <button className="rounded-lg px-2 py-1 text-xs font-semibold text-primary md:hidden" type="button" onClick={() => setShowContactPanel(false)}>Cerrar</button>
               <Chip
                 size="sm"
                 variant="flat"
@@ -2824,6 +2846,12 @@ export default function ContactCenterPage() {
                 Convertir a Deal
               </Button>
             </div>
+
+            {selectedConv.contactId?._id && (
+              <div className="rounded-2xl border border-divider/70 bg-default-50/60 p-3">
+                <ActivityPanel compact contactId={selectedConv.contactId._id} />
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -10,7 +10,7 @@ export default function PrivacyPage() {
     <div className="mx-auto max-w-3xl px-6 py-16">
       <h1 className="text-3xl font-bold mb-2">Política de Privacidad</h1>
       <p className="text-sm text-default-400 mb-10">
-        Última actualización: {new Date().toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric" })}
+        Última actualización: 24 de octubre de 2026
       </p>
 
       <div className="prose prose-sm dark:prose-invert max-w-none space-y-8 text-default-600">
@@ -36,7 +36,7 @@ export default function PrivacyPage() {
           <ul className="list-disc pl-5 space-y-1">
             <li>Nombre, apellido y correo electrónico al registrarte.</li>
             <li>Nombre de tu empresa y datos de contacto comercial.</li>
-            <li>Credenciales de integración con terceros (Facebook App ID, App Secret, tokens de acceso) que proporcionas voluntariamente para conectar tus canales.</li>
+            <li>Credenciales de integración con terceros (por ejemplo, los tokens de acceso de las páginas de Facebook e Instagram que autorizas, o el acceso a tu cuenta de correo) que proporcionas voluntariamente para conectar tus canales. Las contraseñas de correo se almacenan cifradas; los tokens se protegen mediante controles de acceso y no se devuelven al navegador.</li>
           </ul>
 
           <h3 className="text-sm font-semibold text-foreground mt-4">2.2 Información recopilada automáticamente</h3>
@@ -87,7 +87,7 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-semibold text-foreground">5. Almacenamiento y Seguridad</h2>
           <ul className="list-disc pl-5 space-y-1">
             <li>Los datos se almacenan en servidores seguros con cifrado en tránsito (HTTPS/TLS).</li>
-            <li>Las credenciales sensibles (App Secret, tokens) se almacenan de forma cifrada en nuestra base de datos.</li>
+            <li>Los secretos de la plataforma se mantienen fuera del código; las contraseñas de correo se cifran y los tokens de integración se restringen al servidor.</li>
             <li>Implementamos controles de acceso basados en roles para proteger los datos de cada tenant.</li>
             <li>Realizamos copias de seguridad periódicas para prevenir pérdida de datos.</li>
           </ul>
@@ -132,7 +132,7 @@ export default function PrivacyPage() {
             &quot;Solicitud de eliminación de datos&quot;. Procesaremos tu solicitud en un plazo máximo de 30 días hábiles.
           </p>
           <p>
-            También puedes eliminar tu cuenta directamente desde la configuración de tu perfil dentro de la plataforma.
+            Si retiras AXENTYC de tu cuenta de Facebook o Instagram, revocamos automáticamente las conexiones y eliminamos los tokens de acceso asociados. Puedes consultar el estado de una solicitud en nuestra <a href="/data-deletion" className="text-primary underline">página de eliminación de datos</a>.
           </p>
         </section>
 

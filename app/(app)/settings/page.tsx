@@ -5,8 +5,11 @@ import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { motion } from "framer-motion";
 import { Building2, CreditCard, Settings, User } from "lucide-react";
+import QuickRepliesManager from "@/components/crm/QuickRepliesManager";
+import { useWorkspaces } from "@/contexts/WorkspaceContext";
 
 export default function SettingsPage() {
+  const { hasWorkspace } = useWorkspaces();
   return (
     <motion.div animate={{ opacity: 1, y: 0 }} className="space-y-6" initial={{ opacity: 0, y: 20 }}>
       <div>
@@ -55,6 +58,8 @@ export default function SettingsPage() {
           </CardBody>
         </Card>
       </div>
+
+      {hasWorkspace && <QuickRepliesManager />}
     </motion.div>
   );
 }

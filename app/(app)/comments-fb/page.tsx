@@ -141,7 +141,7 @@ export default function FacebookCommentsPage() {
     if (!replyText.trim()) return;
     
     setSending(true);
-    console.log('Enviando respuesta:', { commentId, message: replyText });
+    
     
     try {
       const response = await api.post(
@@ -149,7 +149,7 @@ export default function FacebookCommentsPage() {
         { commentId, message: replyText, pageId: selectedPage, postId: selectedPost?.id }
       );
       
-      console.log('Respuesta del servidor:', response);
+      
       
       if (response.success) {
         toast.success('Respuesta enviada');

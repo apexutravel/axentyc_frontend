@@ -46,10 +46,6 @@ export const siteConfig = {
       label: "Settings",
       href: "/settings",
     },
-    {
-      label: "Logout",
-      href: "/logout",
-    },
   ],
   sidebarItems: [
     {
@@ -68,6 +64,12 @@ export const siteConfig = {
       label: "Email",
       href: "/inbox",
       icon: "Inbox",
+      group: "workspace",
+    },
+    {
+      label: "Tareas",
+      href: "/tasks",
+      icon: "CheckSquare",
       group: "workspace",
     },
     {
@@ -120,6 +122,12 @@ export const siteConfig = {
       label: "Automations",
       href: "/automations",
       icon: "Zap",
+      group: "workspace",
+    },
+    {
+      label: "Reportes",
+      href: "/analytics",
+      icon: "BarChart3",
       group: "workspace",
     },
     {

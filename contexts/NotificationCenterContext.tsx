@@ -77,7 +77,7 @@ function playNotificationSound() {
     osc2.stop(ctx.currentTime + 0.4);
 
     osc2.onended = () => ctx.close();
-    console.log("[Notification] Sound played");
+    
   } catch (e) {
     try {
       const audio = new Audio(
@@ -85,7 +85,7 @@ function playNotificationSound() {
       );
       audio.volume = 1;
       void audio.play();
-      console.log("[Notification] Sound fallback played");
+      
     } catch {
       console.warn("[Notification] Sound failed:", e);
     }
@@ -142,21 +142,13 @@ export function NotificationCenterProvider({ children }: { children: React.React
   const bcRef = useRef<BroadcastChannel | null>(null);
   const globalActiveRef = useRef<{ id: string | null; isActive: boolean }>({ id: null, isActive: false });
   const setActiveConversationId = useCallback((conversationId: string | null) => {
-    console.log("[Notification] 🎯 setActiveConversationId:", conversationId);
+    
     activeConvIdRef.current = conversationId;
     setActiveConvId(conversationId);
   }, []);
 
   const pushNotification = useCallback((next: ChatNotification) => {
-    console.log("[Notification] pushNotification called:", {
-      type: next?.type,
-      conversationId: next?.conversationId,
-      activeConvId: activeConvIdRef.current,
-      willSuppress: next?.type === "message" && 
-                    next?.conversationId && 
-                    activeConvIdRef.current && 
-                    String(next.conversationId) === String(activeConvIdRef.current)
-    });
+    
     
     if (next?.type === "message" && next?.conversationId) {
       const isLocalActive = !!(
@@ -169,12 +161,12 @@ export function NotificationCenterProvider({ children }: { children: React.React
         String(next.conversationId) === String(globalActiveRef.current?.id)
       );
       if (isLocalActive || isGlobalActive) {
-        console.log("[Notification] ✅ SUPPRESSED (active conversation local/global):", next.conversationId);
+        
         return;
       }
     }
     
-    console.log("[Notification] ⚠️ NOT SUPPRESSED - will play sound and show notification");
+    
     setNotifications((prev) => {
       // Group by conversation: replace existing notification for same conversation
       if (next.conversationId) {
@@ -206,7 +198,6 @@ export function NotificationCenterProvider({ children }: { children: React.React
       bcRef.current.onmessage = (event: MessageEvent) => {
         const data = (event?.data || {}) as { id?: string | null; isActive?: boolean };
         globalActiveRef.current = { id: data?.id || null, isActive: Boolean(data?.isActive) };
-        // console.log("[Notification] ℹ️ Broadcast received:", globalActiveRef.current);
       };
     } catch (e) {
       console.warn("[Notification] BroadcastChannel not available:", e);
@@ -280,10 +271,10 @@ export function NotificationCenterProvider({ children }: { children: React.React
   useEffect(() => {
     const tid = tenant?.id || user?.tenantId;
     if (tid) {
-      console.log("[Notification] Setting tenant ID:", tid);
+      
       setTenantId(tid);
     } else {
-      console.log("[Notification] Tenant ID not available yet");
+      
     }
   }, [tenant?.id, user?.tenantId, setTenantId]);
 
@@ -293,18 +284,18 @@ export function NotificationCenterProvider({ children }: { children: React.React
     
     const loadUnreadConversations = async () => {
       try {
-        console.log("[Notification] Loading unread conversations...");
+        
         const params = new URLSearchParams();
         params.set("channels", "web_chat,facebook,instagram,whatsapp");
         const data = await api.get(`${API_ENDPOINTS.conversations.list}?${params.toString()}`);
         const conversations = ((data as any)?.data ?? data) as any[];
         
-        console.log("[Notification] Conversations loaded:", conversations.length);
+        
         
         if (!Array.isArray(conversations)) return;
         
         const unreadConversations = conversations.filter((c) => (c?.unreadCount || 0) > 0);
-        console.log("[Notification] Unread conversations:", unreadConversations.length);
+        
         
         unreadConversations.forEach((conv) => {
           const lastMsg = conv?.lastMessage || {};
@@ -333,7 +324,7 @@ export function NotificationCenterProvider({ children }: { children: React.React
             read: false,
           };
 
-          console.log("[Notification] Creating notification for:", conv._id);
+          
           pushNotification(notification);
         });
       } catch (error) {
@@ -356,11 +347,11 @@ export function NotificationCenterProvider({ children }: { children: React.React
         const token = await firebase.requestNotificationPermission();
         if (token) {
           await api.post("/users/fcm-token", { token });
-          console.log("[FCM] Token registered successfully");
+          
         }
 
         unsubscribeForeground = firebase.onForegroundMessage((payload: any) => {
-          console.log("[FCM] Foreground message:", payload);
+          
           
           const conversationId = payload.data?.conversationId;
           
@@ -373,7 +364,7 @@ export function NotificationCenterProvider({ children }: { children: React.React
             conversationId && globalActiveRef.current?.isActive && String(conversationId) === String(globalActiveRef.current?.id)
           );
           if (isLocalActive || isGlobalActive) {
-            console.log("[FCM] ✅ SUPPRESSED (active conversation local/global):", conversationId);
+            
             return;
           }
           
@@ -405,7 +396,7 @@ export function NotificationCenterProvider({ children }: { children: React.React
   // and re-applies on reconnect, so no isConnected guard needed
   useEffect(() => {
     const handleIncomingMessage = (data: any) => {
-      console.log("[Notification] message.received event:", JSON.stringify(data, null, 2));
+      
       const conversationId = data?.conversationId || data?.message?.conversationId;
       const message = data?.message || data;
       if (message?.metadata?.isComment) return;
@@ -421,7 +412,7 @@ export function NotificationCenterProvider({ children }: { children: React.React
       const senderName = contactName || "Visitante";
       
       if (!conversationId || !message?.content) {
-        console.log("[Notification] Skipped - missing conversationId or content");
+        
         return;
       }
 
@@ -440,12 +431,12 @@ export function NotificationCenterProvider({ children }: { children: React.React
         read: false,
       };
       
-      console.log("[Notification] Created grouped notification:", notification);
+      
       pushNotification(notification);
     };
 
     const handleConversationCreated = (data: any) => {
-      console.log("[Notification] conversation.created event:", JSON.stringify(data, null, 2));
+      
       if (data?.metadata?.isComment) return;
       if (!isForActiveWorkspace(data?.workspaceId)) return;
       const conversationId = data?._id || data?.conversationId;
@@ -462,12 +453,12 @@ export function NotificationCenterProvider({ children }: { children: React.React
         createdAt: new Date().toISOString(),
         read: false,
       };
-      console.log("[Notification] Created conversation notification:", notification);
+      
       pushNotification(notification);
     };
 
     const handleContactEnriched = (data: any) => {
-      console.log("[Notification] contact.enriched event:", JSON.stringify(data, null, 2));
+      
       const contactId = data?._id || data?.contactId;
       const newName = data?.name;
       
@@ -496,11 +487,11 @@ export function NotificationCenterProvider({ children }: { children: React.React
       );
     };
 
-    console.log("[Notification] Registering socket event listeners");
+    
     const handleEmailReceived = (data: any) => {
       if (!isForActiveWorkspace(data?.workspaceId)) return;
       if (data?.folder && data.folder !== "INBOX") return;
-      console.log("[Notification] email.received event:", data?.subject);
+      
       const senderName = data?.from?.name || data?.from?.address || "Remitente";
       const subject = data?.subject || "(Sin asunto)";
       const notification: ChatNotification = {
@@ -531,6 +522,37 @@ export function NotificationCenterProvider({ children }: { children: React.React
       }
     };
 
+    const handleTaskDue = (data: any) => {
+      if (!isForActiveWorkspace(data?.workspaceId)) return;
+      if (data?.assignedTo && user?.id && String(data.assignedTo) !== String(user.id)) return;
+      pushNotification({
+        id: `task:${data?.taskId}`,
+        type: "system",
+        title: "Tarea por vencer",
+        message: data?.title || "Tienes una tarea pendiente",
+        workspaceId: data?.workspaceId ? String(data.workspaceId) : undefined,
+        createdAt: new Date().toISOString(),
+        read: false,
+      });
+    };
+
+    // Notifications raised by automations ("send_notification" action)
+    const handleServerNotification = (data: any) => {
+      if (!isForActiveWorkspace(data?.workspaceId)) return;
+      pushNotification({
+        id: `auto:${Date.now()}`,
+        conversationId: data?.conversationId ? String(data.conversationId) : undefined,
+        type: "system",
+        title: data?.title || "Automatización",
+        message: data?.message || "",
+        workspaceId: data?.workspaceId ? String(data.workspaceId) : undefined,
+        createdAt: data?.createdAt || new Date().toISOString(),
+        read: false,
+      });
+    };
+
+    const cleanup6 = subscribe("task.due", handleTaskDue);
+    const cleanup7 = subscribe("notification", handleServerNotification);
     const cleanup1 = subscribe("message.received", handleIncomingMessage);
     const cleanup2 = subscribe("conversation.created", handleConversationCreated);
     const cleanup3 = subscribe("contact.enriched", handleContactEnriched);
@@ -538,14 +560,16 @@ export function NotificationCenterProvider({ children }: { children: React.React
     const cleanup5 = subscribe("email.sync.complete", handleEmailSyncComplete);
 
     return () => {
-      console.log("[Notification] Cleaning up event listeners");
+      
       cleanup1();
       cleanup2();
       cleanup3();
       cleanup4();
       cleanup5();
+      cleanup6();
+      cleanup7();
     };
-  }, [subscribe, pushNotification]);
+  }, [subscribe, pushNotification, user?.id]);
 
   const markAsRead = useCallback((id: string) => {
     setNotifications((prev) => prev.map((item) => (item.id === id ? { ...item, read: true } : item)));

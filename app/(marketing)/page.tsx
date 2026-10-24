@@ -56,66 +56,66 @@ const stagger = {
 };
 
 /* ─── data ─── */
-const integrations = [
-  { name: "Facebook Messenger", icon: Facebook, color: "text-blue-500", bg: "bg-blue-500/10" },
-  { name: "Instagram DM", icon: Instagram, color: "text-pink-500", bg: "bg-pink-500/10" },
-  { name: "WhatsApp Business", icon: Send, color: "text-green-500", bg: "bg-green-500/10" },
-  { name: "TikTok", icon: Music2, color: "text-rose-500", bg: "bg-rose-500/10" },
+const integrations: { name: string; icon: any; color: string; bg: string; soon?: boolean }[] = [
+  { name: "Facebook Messenger y comentarios", icon: Facebook, color: "text-blue-500", bg: "bg-blue-500/10" },
+  { name: "Instagram DM y comentarios", icon: Instagram, color: "text-pink-500", bg: "bg-pink-500/10" },
   { name: "Email SMTP/IMAP", icon: Mail, color: "text-orange-500", bg: "bg-orange-500/10" },
   { name: "Live Chat Widget", icon: MessageSquare, color: "text-cyan-500", bg: "bg-cyan-500/10" },
+  { name: "WhatsApp Business", icon: Send, color: "text-green-500", bg: "bg-green-500/10", soon: true },
+  { name: "TikTok", icon: Music2, color: "text-rose-500", bg: "bg-rose-500/10", soon: true },
 ];
 
 const features = [
   {
     icon: MessageSquare,
     title: "Inbox Omnichannel",
-    desc: "Una bandeja unificada para todos los canales. Asignación automática, etiquetado inteligente y vista de equipo en tiempo real.",
+    desc: "Mensajes directos y comentarios de Facebook e Instagram, email y chat web en una sola bandeja, con notificaciones en tiempo real y respuestas rápidas.",
     gradient: "from-blue-500 to-cyan-500",
   },
   {
     icon: Users,
     title: "CRM & Pipeline Visual",
-    desc: "Pipeline Kanban drag & drop. Gestiona contactos, leads y deals con campos personalizados y seguimiento completo.",
+    desc: "Contactos, leads y deals en un pipeline Kanban, con tareas, notas e historial unificado por cliente. Cotizaciones y facturas con PDF.",
     gradient: "from-violet-500 to-purple-500",
   },
   {
     icon: Bot,
-    title: "Inteligencia Artificial",
-    desc: "Respuestas automáticas, clasificación de intenciones, resúmenes de conversación y sugerencias de respuesta con IA.",
+    title: "Inteligencia Artificial · Próximamente",
+    desc: "Estamos construyendo sugerencias de respuesta, resúmenes de conversación y clasificación de leads con IA.",
     gradient: "from-orange-500 to-red-500",
   },
   {
     icon: Zap,
     title: "Automatizaciones",
-    desc: "Flujos sin código: asignación inteligente, notificaciones, escalamiento automático y acciones por eventos.",
+    desc: "Reglas sin código: cuando llegue un mensaje o se cree un lead, responde, etiqueta, asigna, crea tareas o avisa a tu equipo.",
     gradient: "from-yellow-500 to-amber-500",
   },
   {
     icon: BarChart3,
     title: "Analytics Avanzados",
-    desc: "Dashboards en tiempo real con métricas por agente, canal, tiempo de respuesta y conversión de ventas.",
+    desc: "Tiempo de primera respuesta, conversaciones por canal y por agente, embudo de ventas y facturación cobrada.",
     gradient: "from-emerald-500 to-green-500",
   },
   {
     icon: Shield,
     title: "Multi-Tenant Seguro",
-    desc: "Aislamiento total de datos por empresa. Roles granulares, auditoría y cifrado end-to-end para cada tenant.",
+    desc: "Los datos de cada empresa están aislados. Roles por equipo, credenciales de email cifradas y webhooks verificados por firma.",
     gradient: "from-slate-500 to-zinc-500",
   },
 ];
 
 const stats = [
-  { value: "99.9%", label: "Uptime garantizado", suffix: "" },
-  { value: "< 1s", label: "Tiempo de respuesta", suffix: "" },
-  { value: "5+", label: "Canales integrados", suffix: "" },
-  { value: "24/7", label: "Soporte técnico", suffix: "" },
+  { value: "4", label: "Canales conectados hoy", suffix: "" },
+  { value: "14 días", label: "Prueba gratis, sin tarjeta", suffix: "" },
+  { value: "$0", label: "Plan Free para empezar", suffix: "" },
+  { value: "ES · EN", label: "Facturas en español o inglés", suffix: "" },
 ];
 
 const steps = [
   {
     num: "01",
     title: "Conecta tus canales",
-    desc: "Vincula Facebook Messenger, Instagram, WhatsApp, email y más en minutos. Sin código, sin complicaciones.",
+    desc: "Vincula Facebook, Instagram, email y el chat de tu web en minutos. Sin código, sin complicaciones.",
     icon: GitBranch,
   },
   {
@@ -127,32 +127,26 @@ const steps = [
   {
     num: "03",
     title: "Convierte y escala",
-    desc: "Automatiza, mide y optimiza. Convierte conversaciones en ventas con IA, CRM visual y analytics en tiempo real.",
+    desc: "Automatiza respuestas y seguimientos, convierte conversaciones en leads y deals, factura y mide tus resultados.",
     icon: TrendingUp,
   },
 ];
 
-const testimonials = [
+const useCases = [
   {
-    name: "María González",
-    role: "Directora Comercial",
-    company: "TechRetail MX",
-    text: "Pasamos de responder en 4 horas a menos de 5 minutos. AXENTYC transformó nuestra operación de atención al cliente y triplicó nuestras conversiones.",
-    stars: 5,
+    title: "Negocios que venden por redes",
+    role: "Instagram + Facebook",
+    text: "Los mensajes y comentarios de tus páginas llegan al mismo lugar. Cada cliente que escribe se guarda como contacto, con su historial.",
   },
   {
-    name: "Carlos Mendoza",
-    role: "CEO & Fundador",
-    company: "ServiPlus CO",
-    text: "Tener WhatsApp, Instagram y Facebook en una sola bandeja fue un game-changer. Nuestro equipo es 3x más productivo desde que implementamos AXENTYC.",
-    stars: 5,
+    title: "Equipos de ventas pequeños",
+    role: "Leads, deals y tareas",
+    text: "Pasa de la conversación al lead, del lead al deal y del deal a la factura, con tareas y notas para no perder ningún seguimiento.",
   },
   {
-    name: "Ana Rodríguez",
-    role: "Head of Operations",
-    company: "E-Commerce Pro",
-    text: "La automatización y la IA nos permiten atender 10x más clientes sin ampliar el equipo. El ROI fue inmediato.",
-    stars: 5,
+    title: "Agencias con varios clientes",
+    role: "Una cuenta, varias empresas",
+    text: "Cada cliente vive en su propia empresa (workspace) con sus canales, contactos, correos y facturas separados.",
   },
 ];
 
@@ -163,33 +157,33 @@ const faqs = [
   },
   {
     q: "¿Qué canales de comunicación soportan?",
-    a: "Actualmente soportamos Facebook Messenger, Instagram DM, WhatsApp Business, TikTok, email (SMTP/IMAP) y un widget de live chat embebible en tu sitio web. Continuamente añadimos más integraciones.",
+    a: "Hoy: Facebook Messenger y comentarios, Instagram DM y comentarios, email (SMTP/IMAP, varias cuentas) y un widget de chat para tu sitio web. WhatsApp Business es lo siguiente en nuestra lista; TikTok y YouTube vendrán después.",
   },
   {
     q: "¿Es seguro para manejar datos de clientes?",
-    a: "Absolutamente. Utilizamos arquitectura Multi-Tenant con aislamiento completo de datos, cifrado en tránsito y en reposo, roles granulares de acceso y auditoría completa. Cumplimos con GDPR y mejores prácticas de seguridad.",
+    a: "Cada empresa tiene sus datos aislados, las conexiones usan TLS, las contraseñas de tus cuentas de email se guardan cifradas y los webhooks de Meta se verifican por firma. Puedes pedir la eliminación de tus datos en cualquier momento (ver Política de Privacidad).",
   },
   {
     q: "¿Puedo probarlo antes de pagar?",
-    a: "Sí. Ofrecemos un período de prueba gratuito sin necesidad de tarjeta de crédito. Puedes explorar todas las funcionalidades y decidir si es la herramienta adecuada para tu negocio.",
+    a: "Sí. El plan Free no vence, y los planes de pago incluyen 14 días de prueba sin tarjeta. Cuando termina la prueba, tu cuenta pasa a solo lectura hasta que actives la suscripción.",
   },
   {
     q: "¿Funciona para equipos grandes?",
-    a: "Sí. AXENTYC está diseñado para escalar desde freelancers hasta empresas con cientos de agentes. Incluye asignación automática de conversaciones, roles de equipo, y métricas por agente.",
+    a: "Sí. Los planes crecen de 1 a 30 usuarios y de 1 a 25 empresas. Asignas conversaciones a tu equipo (a mano o con automatizaciones), hay roles por empresa y métricas por agente.",
   },
   {
     q: "¿Ofrecen soporte técnico?",
-    a: "Sí, ofrecemos soporte técnico por email y chat. Los planes empresariales incluyen un Customer Success Manager dedicado y SLA de respuesta garantizado.",
+    a: "Sí, por email. El plan Agency incluye soporte prioritario.",
   },
 ];
 
 const securityFeatures = [
-  { icon: Lock, label: "Cifrado TLS/SSL" },
-  { icon: Database, label: "Aislamiento de datos" },
-  { icon: ShieldCheck, label: "GDPR Compliant" },
-  { icon: Eye, label: "Auditoría completa" },
-  { icon: Server, label: "99.9% Uptime SLA" },
-  { icon: Globe, label: "CDN Global" },
+  { icon: Lock, label: "Conexión cifrada (TLS)" },
+  { icon: Database, label: "Datos aislados por empresa" },
+  { icon: ShieldCheck, label: "Webhooks verificados por firma" },
+  { icon: Eye, label: "Roles y permisos por equipo" },
+  { icon: Server, label: "Credenciales de email cifradas" },
+  { icon: Globe, label: "Eliminación de datos a solicitud" },
 ];
 
 export default function HomePage() {
@@ -220,7 +214,7 @@ export default function HomePage() {
                 className="mb-6"
                 startContent={<Sparkles size={14} />}
               >
-                Plataforma Omnichannel + CRM + IA
+                Plataforma Omnichannel + CRM + Facturación
               </Chip>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.08] mb-6">
@@ -234,9 +228,9 @@ export default function HomePage() {
               </h1>
 
               <p className="text-lg sm:text-xl text-default-400 max-w-xl mb-8 leading-relaxed">
-                Unifica Facebook Messenger, Instagram, WhatsApp, email y más
-                en un solo inbox. Gestiona tu pipeline de ventas y automatiza
-                respuestas con inteligencia artificial.
+                Unifica Facebook Messenger, Instagram, email y el chat de tu web
+                en un solo inbox. Gestiona tu pipeline de ventas, factura y
+                automatiza respuestas y seguimientos.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 mb-8">
@@ -300,7 +294,7 @@ export default function HomePage() {
                     <div className="col-span-1 border-r border-divider p-3 space-y-2">
                       {[
                         { name: "María López", ch: "Messenger", color: "bg-blue-500", unread: true },
-                        { name: "Carlos R.", ch: "WhatsApp", color: "bg-green-500", unread: true },
+                        { name: "Carlos R.", ch: "Facebook", color: "bg-blue-500", unread: true },
                         { name: "Ana Torres", ch: "Instagram", color: "bg-pink-500", unread: false },
                         { name: "Pedro Díaz", ch: "Email", color: "bg-orange-500", unread: false },
                         { name: "Laura M.", ch: "Live Chat", color: "bg-cyan-500", unread: false },
@@ -348,7 +342,7 @@ export default function HomePage() {
                         </div>
                         <div className="flex items-center gap-1.5 text-[10px] text-default-400">
                           <Bot size={12} className="text-primary" />
-                          <span>IA sugiriendo respuesta...</span>
+                          <span>Escribiendo...</span>
                         </div>
                       </div>
                     </div>
@@ -361,12 +355,12 @@ export default function HomePage() {
                   animate={{ y: [0, -8, 0] }}
                   transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                 >
-                  <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center">
-                    <Send size={14} className="text-green-500" />
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                    <Send size={14} className="text-blue-500" />
                   </div>
                   <div>
                     <p className="text-[11px] font-semibold">Nuevo mensaje</p>
-                    <p className="text-[10px] text-default-400">WhatsApp • Ahora</p>
+                    <p className="text-[10px] text-default-400">Messenger • Ahora</p>
                   </div>
                 </motion.div>
 
@@ -379,8 +373,8 @@ export default function HomePage() {
                     <TrendingUp size={14} className="text-primary" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-semibold">+24% conversión</p>
-                    <p className="text-[10px] text-default-400">vs. mes anterior</p>
+                    <p className="text-[11px] font-semibold">Deal actualizado</p>
+                    <p className="text-[10px] text-default-400">Pipeline en tiempo real</p>
                   </div>
                 </motion.div>
               </div>
@@ -394,7 +388,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <motion.div {...fadeUp()} className="text-center">
             <p className="text-xs font-semibold text-default-400 uppercase tracking-widest mb-6">
-              Integraciones oficiales con las plataformas líderes
+              Canales disponibles y próximos
             </p>
             <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
               {integrations.map((item) => {
@@ -403,6 +397,7 @@ export default function HomePage() {
                   <div key={item.name} className="flex items-center gap-2 text-default-400 hover:text-foreground transition-colors group">
                     <Icon size={22} className={`${item.color} opacity-60 group-hover:opacity-100 transition-opacity`} />
                     <span className="text-sm font-medium hidden sm:inline">{item.name}</span>
+                    {item.soon && <span className="rounded-full bg-default-100 px-2 py-0.5 text-[10px] font-semibold text-default-500">Próximamente</span>}
                   </div>
                 );
               })}
@@ -518,7 +513,7 @@ export default function HomePage() {
                       title: "Nuevo", color: "bg-blue-500", count: 3, total: "$12,400",
                       cards: [
                         { name: "TechRetail MX", value: "$4,800", tag: "Messenger", tagColor: "text-blue-500", days: "2d" },
-                        { name: "Farmacia Plus", value: "$3,200", tag: "WhatsApp", tagColor: "text-green-500", days: "1d" },
+                        { name: "Farmacia Plus", value: "$3,200", tag: "Instagram", tagColor: "text-pink-500", days: "1d" },
                         { name: "ModaLatam", value: "$4,400", tag: "Instagram", tagColor: "text-pink-500", days: "3d" },
                       ],
                     },
@@ -526,7 +521,7 @@ export default function HomePage() {
                       title: "Contactado", color: "bg-yellow-500", count: 2, total: "$8,600",
                       cards: [
                         { name: "ServiPlus CO", value: "$5,200", tag: "Email", tagColor: "text-orange-500", days: "5d" },
-                        { name: "AutoPartes CR", value: "$3,400", tag: "WhatsApp", tagColor: "text-green-500", days: "4d" },
+                        { name: "AutoPartes CR", value: "$3,400", tag: "Instagram", tagColor: "text-pink-500", days: "4d" },
                       ],
                     },
                     {
@@ -539,7 +534,7 @@ export default function HomePage() {
                     {
                       title: "Cerrado ✓", color: "bg-success", count: 1, total: "$7,500",
                       cards: [
-                        { name: "GreenEnergy", value: "$7,500", tag: "WhatsApp", tagColor: "text-green-500", days: "12d" },
+                        { name: "GreenEnergy", value: "$7,500", tag: "Instagram", tagColor: "text-pink-500", days: "12d" },
                       ],
                     },
                   ].map((col) => (
@@ -619,10 +614,10 @@ export default function HomePage() {
                     {
                       name: "Laura Méndez",
                       avatar: "L",
-                      platform: "WhatsApp",
-                      platformIcon: Send,
-                      platformColor: "text-green-500",
-                      dotColor: "bg-green-500",
+                      platform: "Messenger",
+                      platformIcon: Facebook,
+                      platformColor: "text-blue-500",
+                      dotColor: "bg-blue-500",
                       msg: "Hola! Vi el anuncio de la promo 2x1, ¿sigue vigente? 🛍️",
                       time: "Ahora",
                       unread: true,
@@ -674,7 +669,7 @@ export default function HomePage() {
                       msg: "¿Tienen API disponible para integrar con nuestro ERP?",
                       time: "18 min",
                       unread: false,
-                      agent: "Bot IA",
+                      agent: "Automatización",
                     },
                   ].map((conv, i) => {
                     const PlatformIcon = conv.platformIcon;
@@ -748,14 +743,14 @@ export default function HomePage() {
                 </span>
               </h2>
               <p className="text-lg text-default-400 leading-relaxed mb-6">
-                WhatsApp, Messenger, Instagram, email y live chat — todo llega al mismo lugar.
+                Messenger, Instagram, email y live chat — todo llega al mismo lugar.
                 Tu equipo ve quién escribió, desde dónde, y responde en segundos.
               </p>
               <div className="space-y-3">
                 {[
                   "Indicador de canal en cada conversación",
-                  "Asignación automática a agentes disponibles",
-                  "IA que sugiere respuestas y clasifica intenciones",
+                  "Mensajes directos y comentarios de Facebook e Instagram",
+                  "Asigna conversaciones a tu equipo",
                   "Historial unificado por contacto, sin importar el canal",
                   "Respuesta en tiempo real con indicadores de escritura",
                 ].map((item) => (
@@ -786,16 +781,16 @@ export default function HomePage() {
                 </span>
               </h2>
               <p className="text-lg text-default-400 leading-relaxed mb-6">
-                Crea flujos de trabajo visuales sin escribir código. Asignación inteligente,
-                respuestas automáticas, etiquetado, escalamiento y más — todo con drag & drop.
+                Crea reglas sin escribir código: cuando llegue un mensaje, se cree un lead o un deal
+                cambie de etapa, responde, etiqueta, asigna, crea tareas o avisa a tu equipo.
               </p>
               <div className="space-y-3">
                 {[
-                  "Flujos visuales sin código",
-                  "Triggers por canal, palabra clave o etiqueta",
-                  "Respuestas automáticas con IA integrada",
-                  "Escalamiento por tiempo sin respuesta",
-                  "Notificaciones a Slack, email o dentro del CRM",
+                  "Reglas \"cuando pase X, haz Y\" sin código",
+                  "Disparadores por canal, palabra clave o etiqueta",
+                  "Respuestas automáticas con tus propios mensajes",
+                  "Tareas de seguimiento creadas automáticamente",
+                  "Notificaciones al equipo y webhooks",
                 ].map((item) => (
                   <div key={item} className="flex items-center gap-3">
                     <CheckCircle2 size={16} className="text-success shrink-0" />
@@ -845,7 +840,7 @@ export default function HomePage() {
                       <span className="text-[11px] font-black text-warning uppercase tracking-wider">Condición</span>
                     </div>
                     <p className="text-xs font-semibold text-foreground">¿Mensaje contiene &quot;precio&quot;?</p>
-                    <p className="text-[10px] text-default-400 mt-0.5">Analizar texto con IA</p>
+                    <p className="text-[10px] text-default-400 mt-0.5">Busca palabras clave</p>
                   </div>
 
                   {/* Branch */}
@@ -856,7 +851,7 @@ export default function HomePage() {
                       <div className="w-px h-3 bg-success/40" />
                       <div className="w-full bg-success/10 border border-success/30 rounded-xl p-2.5 text-center">
                         <Bot size={12} className="text-success mx-auto mb-1" />
-                        <p className="text-[10px] font-semibold text-foreground">Responder con IA</p>
+                        <p className="text-[10px] font-semibold text-foreground">Respuesta automática</p>
                         <p className="text-[9px] text-default-400">Enviar lista de precios</p>
                       </div>
                       <div className="w-px h-3 bg-success/40" />
@@ -1003,6 +998,7 @@ export default function HomePage() {
                           <Icon size={22} className={item.color} />
                         </div>
                         <span className="text-xs font-semibold text-default-600 leading-tight">{item.name}</span>
+                        {item.soon && <span className="rounded-full bg-default-100 px-2 py-0.5 text-[10px] font-semibold text-default-500">Próximamente</span>}
                       </CardBody>
                     </Card>
                   </motion.div>
@@ -1042,16 +1038,16 @@ export default function HomePage() {
                 <div className="grid lg:grid-cols-2 gap-0">
                   <div className="p-8 sm:p-12 lg:p-16 flex flex-col justify-center">
                     <Chip variant="flat" color="warning" size="sm" className="mb-5 w-fit" startContent={<ShieldCheck size={14} />}>
-                      Seguridad Enterprise
+                      Seguridad
                     </Chip>
                     <h2 className="text-2xl md:text-4xl font-black mb-5">
-                      Seguridad y cumplimiento{" "}
-                      <span className="text-warning">de nivel empresarial</span>
+                      Seguridad pensada{" "}
+                      <span className="text-warning">para los datos de tus clientes</span>
                     </h2>
                     <p className="text-base text-default-400 leading-relaxed mb-8">
-                      Arquitectura Multi-Tenant con aislamiento completo de datos por empresa.
-                      Cada organización opera en un entorno seguro con cifrado, auditoría
-                      y controles de acceso granulares.
+                      Arquitectura multi-empresa con los datos de cada cliente separados.
+                      Cada organización opera con sus datos separados, credenciales cifradas
+                      y controles de acceso por rol.
                     </p>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       {securityFeatures.map((item) => {
@@ -1071,9 +1067,9 @@ export default function HomePage() {
                       <div className="relative flex flex-col items-center gap-4">
                         <Shield className="text-warning" size={80} strokeWidth={1} />
                         <div className="flex gap-2">
-                          <Chip size="sm" variant="bordered" className="border-warning/30 text-warning">GDPR</Chip>
-                          <Chip size="sm" variant="bordered" className="border-warning/30 text-warning">SOC 2</Chip>
-                          <Chip size="sm" variant="bordered" className="border-warning/30 text-warning">ISO 27001</Chip>
+                          <Chip size="sm" variant="bordered" className="border-warning/30 text-warning">TLS</Chip>
+                          <Chip size="sm" variant="bordered" className="border-warning/30 text-warning">AES-256</Chip>
+                          <Chip size="sm" variant="bordered" className="border-warning/30 text-warning">HMAC</Chip>
                         </div>
                       </div>
                     </div>
@@ -1089,41 +1085,29 @@ export default function HomePage() {
       <section className="py-24 md:py-36 bg-content1/30">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <motion.div className="text-center max-w-3xl mx-auto mb-16" {...fadeUp()}>
-            <Chip variant="flat" size="sm" className="mb-4" startContent={<Star size={14} />}>Testimonios</Chip>
+            <Chip variant="flat" size="sm" className="mb-4" startContent={<Star size={14} />}>Casos de uso</Chip>
             <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-5">
-              Empresas que ya{" "}
+              Hecho para{" "}
               <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                confían en nosotros
+                negocios como el tuyo
               </span>
             </h2>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            {testimonials.map((t, idx) => (
+            {useCases.map((t, idx) => (
               <motion.div
-                key={t.name}
+                key={t.title}
                 {...stagger}
                 transition={{ duration: 0.5, delay: idx * 0.1 }}
               >
                 <Card className="border border-divider h-full hover:border-primary/20 transition-colors">
                   <CardBody className="p-6 space-y-4">
-                    <div className="flex gap-0.5">
-                      {Array.from({ length: t.stars }).map((_, i) => (
-                        <Star key={i} size={14} className="text-warning fill-warning" />
-                      ))}
+                    <div>
+                      <p className="text-base font-bold">{t.title}</p>
+                      <p className="text-xs font-medium text-primary">{t.role}</p>
                     </div>
-                    <p className="text-sm text-default-500 leading-relaxed italic">
-                      &ldquo;{t.text}&rdquo;
-                    </p>
-                    <div className="flex items-center gap-3 pt-2 border-t border-divider">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-sm font-bold">
-                        {t.name[0]}
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold">{t.name}</p>
-                        <p className="text-xs text-default-400">{t.role} · {t.company}</p>
-                      </div>
-                    </div>
+                    <p className="text-sm text-default-500 leading-relaxed">{t.text}</p>
                   </CardBody>
                 </Card>
               </motion.div>
@@ -1255,8 +1239,8 @@ export default function HomePage() {
                 </span>
               </h2>
               <p className="text-lg text-default-400 mb-8 leading-relaxed">
-                Únete a las empresas que ya centralizan sus comunicaciones,
-                automatizan su operación y cierran más deals con AXENTYC.
+                Centraliza tus comunicaciones, automatiza tu operación y lleva
+                cada oportunidad desde el primer mensaje hasta el pago.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 mb-8">
                 <NextLink href="/auth/register">

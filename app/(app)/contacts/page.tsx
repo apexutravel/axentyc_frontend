@@ -47,10 +47,14 @@ import {
   Tag,
   User,
   X,
+  Upload,
 } from "lucide-react";
 import { addToast } from "@heroui/toast";
 import { api } from "@/lib/api";
-import { API_ENDPOINTS } from "@/config/api";
+import { API_ENDPOINTS, API_URL } from "@/config/api";
+import { toast } from "sonner";
+import { download, errorMessage, parseCsv, unwrap as unwrapRes } from "@/lib/crm";
+import ActivityPanel from "@/components/crm/ActivityPanel";
 
 interface Contact {
   _id: string;
@@ -92,6 +96,12 @@ function unwrap<T>(response: any): T {
 }
 
 export default function ContactsPage() {
+  const importModal = useDisclosure();
+  const [importRows, setImportRows] = useState<Record<string, string>[]>([]);
+  const [importFile, setImportFile] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ created: number; skippedDuplicates: number; invalid: { row: number; reason: string }[] } | null>(null);
+
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -261,6 +271,38 @@ export default function ContactsPage() {
     );
   });
 
+  const exportCsv = async () => {
+    try {
+      await download("/contacts/export", "contacts.csv");
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo exportar");
+    }
+  };
+
+  const onPickFile = async (file?: File) => {
+    setImportResult(null);
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) return toast.error("El archivo supera 5 MB");
+    const rows = parseCsv(await file.text());
+    if (rows.length === 0) return toast.error("No encontramos filas. La primera fila debe tener los encabezados (nombre, email, teléfono…)");
+    if (rows.length > 2000) return toast.error("Máximo 2000 contactos por importación. Divide el archivo.");
+    setImportFile(file.name);
+    setImportRows(rows);
+  };
+
+  const runImport = async () => {
+    setImporting(true);
+    try {
+      const res = unwrapRes<any>(await api.post(`${API_URL}/contacts/import`, { rows: importRows }));
+      setImportResult(res);
+      if (res.created > 0) await loadContacts();
+    } catch (e) {
+      toast.error(errorMessage(e, "No se pudo importar"));
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <motion.div
       animate={{ opacity: 1, y: 0 }}
@@ -276,6 +318,12 @@ export default function ContactsPage() {
         </div>
         <div className="flex items-center gap-2">
           <Chip size="sm" variant="flat">{contacts.length} contactos</Chip>
+          <Button size="sm" startContent={<Upload size={14} />} variant="flat" onPress={() => { setImportRows([]); setImportFile(""); setImportResult(null); importModal.onOpen(); }}>
+            Importar
+          </Button>
+          <Button size="sm" startContent={<Download size={14} />} variant="flat" onPress={exportCsv}>
+            Exportar
+          </Button>
           {selectedKeys.size > 0 && (
             <Button
               color="danger"
@@ -586,7 +634,7 @@ export default function ContactsPage() {
       </Modal>
 
       {/* Modal: Ver detalle */}
-      <Modal isOpen={viewModal.isOpen} onClose={viewModal.onClose} size="lg">
+      <Modal isOpen={viewModal.isOpen} onClose={viewModal.onClose} scrollBehavior="inside" size="3xl">
         <ModalContent>
           <ModalHeader>Detalle del Contacto</ModalHeader>
           <ModalBody>
@@ -655,6 +703,7 @@ export default function ContactsPage() {
                     <p className="text-sm bg-default-50 p-3 rounded-lg">{selectedContact.notes}</p>
                   </div>
                 )}
+                <ActivityPanel contactId={selectedContact._id} />
               </div>
             )}
           </ModalBody>
@@ -672,6 +721,41 @@ export default function ContactsPage() {
             >
               Editar
             </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Modal: Importar CSV */}
+      <Modal isOpen={importModal.isOpen} onClose={importModal.onClose} size="lg">
+        <ModalContent>
+          <ModalHeader>Importar contactos desde CSV</ModalHeader>
+          <ModalBody className="space-y-3">
+            <p className="text-sm text-default-500">
+              Sube un archivo .csv con encabezados: <b>nombre, email, teléfono, empresa, etiquetas, notas</b> (etiquetas separadas por &quot;;&quot;). Los contactos que ya existan (mismo email o teléfono) se omiten, nunca se sobrescriben.
+            </p>
+            <Button as="label" className="cursor-pointer" startContent={<Upload size={14} />} variant="bordered">
+              {importFile || "Elegir archivo CSV"}
+              <input accept=".csv,text/csv" className="hidden" type="file" onChange={(e) => onPickFile(e.target.files?.[0])} />
+            </Button>
+            {importRows.length > 0 && !importResult && <p className="text-sm">Se encontraron <b>{importRows.length}</b> filas listas para importar.</p>}
+            {importResult && (
+              <div className="space-y-1 rounded-xl bg-content2 p-3 text-sm">
+                <p>✓ <b>{importResult.created}</b> contactos creados</p>
+                <p>• {importResult.skippedDuplicates} omitidos por duplicados</p>
+                {importResult.invalid.length > 0 && (
+                  <div>
+                    <p className="text-danger">• {importResult.invalid.length} filas con problemas:</p>
+                    <ul className="ml-4 max-h-28 list-disc overflow-y-auto text-xs text-default-500">
+                      {importResult.invalid.map((i) => <li key={i.row}>Fila {i.row}: {i.reason}</li>)}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={importModal.onClose}>{importResult ? "Cerrar" : "Cancelar"}</Button>
+            {!importResult && <Button color="primary" isDisabled={importRows.length === 0} isLoading={importing} onPress={runImport}>Importar {importRows.length || ""}</Button>}
           </ModalFooter>
         </ModalContent>
       </Modal>

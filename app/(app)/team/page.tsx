@@ -14,6 +14,7 @@ import { Building2, Check, Copy, Mail, Send, Shield, Trash2, UserPlus, Users } f
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { API_ENDPOINTS } from "@/config/api";
+import { useBilling } from "@/contexts/BillingContext";
 import { useWorkspaces } from "@/contexts/WorkspaceContext";
 
 type Role = "admin" | "manager" | "agent" | "viewer" | "owner";
@@ -101,6 +102,11 @@ function normalize<T>(response: any): T {
 
 export default function TeamPage() {
   const { workspaces } = useWorkspaces();
+  const { can, subscription } = useBilling();
+  // Plans without team roles only offer the "agent" role
+  const rolesLocked = !can("teamRoles");
+  const lockedRoleKeys = rolesLocked ? ["admin", "manager", "viewer"] : [];
+  const planName = subscription?.plan.name || "actual";
   const inviteModal = useDisclosure();
   const accessModal = useDisclosure();
   const [members, setMembers] = useState<AccountMember[]>([]);
@@ -490,7 +496,7 @@ export default function TeamPage() {
                 }}>
                   {workspaces.map((workspace) => <SelectItem key={workspace._id}>{workspace.name}</SelectItem>)}
                 </Select>
-                <Select label="Rol dentro del workspace" selectedKeys={[accessForm.role]} variant="bordered" onSelectionChange={(keys) => {
+                <Select disabledKeys={lockedRoleKeys} description={rolesLocked ? `Los roles avanzados no están incluidos en el plan ${planName}.` : undefined} label="Rol dentro del workspace" selectedKeys={[accessForm.role]} variant="bordered" onSelectionChange={(keys) => {
                   const next = Array.from(keys)[0] as Role;
                   if (next) setAccessForm((prev) => ({ ...prev, role: next }));
                 }}>
@@ -557,6 +563,10 @@ function InviteModal({
   togglePermission,
   toggleWorkspace,
 }: any) {
+  const { can, subscription } = useBilling();
+  const rolesLocked = !can("teamRoles");
+  const lockedRoleKeys = rolesLocked ? ["admin", "manager", "viewer"] : [];
+  const planName = subscription?.plan.name || "actual";
   return (
     <Modal isOpen={isOpen} size="3xl" onOpenChange={onClose}>
       <ModalContent>
@@ -571,7 +581,7 @@ function InviteModal({
                 <Input label="Nombre" value={form.firstName} variant="bordered" onChange={(event) => setForm((prev: any) => ({ ...prev, firstName: event.target.value }))} />
                 <Input label="Apellido" value={form.lastName} variant="bordered" onChange={(event) => setForm((prev: any) => ({ ...prev, lastName: event.target.value }))} />
                 <Input className="md:col-span-2" label="Email" type="email" value={form.email} variant="bordered" onChange={(event) => setForm((prev: any) => ({ ...prev, email: event.target.value }))} />
-                <Select className="md:col-span-2" label="Rol de cuenta" selectedKeys={[form.role]} variant="bordered" onSelectionChange={(keys) => {
+                <Select className="md:col-span-2" disabledKeys={lockedRoleKeys} description={rolesLocked ? `Los roles avanzados no están incluidos en el plan ${planName}. Mejora tu plan para usarlos.` : undefined} label="Rol de cuenta" selectedKeys={[form.role]} variant="bordered" onSelectionChange={(keys) => {
                   const next = Array.from(keys)[0] as string;
                   if (next) setForm((prev: any) => ({ ...prev, role: next }));
                 }}>

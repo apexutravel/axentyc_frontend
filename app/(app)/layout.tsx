@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { TopNavbar } from "@/components/dashboard/top-navbar";
@@ -8,6 +8,8 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { siteConfig } from "@/config/site";
 import { useNotificationCenter } from "@/contexts/NotificationCenterContext";
 import { useWorkspaces } from "@/contexts/WorkspaceContext";
+import { BillingEventsHandler, SubscriptionBanner } from "@/components/billing/BillingNotices";
+import { useBilling } from "@/contexts/BillingContext";
 import { useUnreadEmails } from "@/hooks/useUnreadEmails";
 
 function isAllowedWithoutWorkspace(pathname: string) {
@@ -35,6 +37,13 @@ export default function DashboardLayout({
   const { unreadCount } = useNotificationCenter();
   const unreadEmails = useUnreadEmails();
   const { isReady, hasWorkspace, canManage, activeWorkspaceId } = useWorkspaces();
+  const { can } = useBilling();
+  const [mobileNav, setMobileNav] = useState(false);
+
+  // Close the drawer after navigating
+  useEffect(() => {
+    setMobileNav(false);
+  }, [pathname]);
 
   const allowed = hasWorkspace || isAllowedWithoutWorkspace(pathname);
 
@@ -47,7 +56,14 @@ export default function DashboardLayout({
     if (!hasWorkspace) {
       return siteConfig.noWorkspaceSidebarItems.filter((item) => canManage || item.href !== "/workspaces");
     }
-    return siteConfig.sidebarItems.map((item) => {
+    return siteConfig.sidebarItems
+      // Quotes / invoices / payments only exist on plans that include invoicing
+      .filter((item) => item.href !== "/invoices" || can("invoicing"))
+      .map((item) => {
+      // Menu entries follow the plan: no pipeline of deals without the feature
+      if (item.children) {
+        item = { ...item, children: item.children.filter((child) => child.href !== "/deals" || can("deals")) };
+      }
       if (item.href === "/contact-center") {
         return { ...item, badge: unreadCount };
       }
@@ -56,15 +72,17 @@ export default function DashboardLayout({
       }
       return item;
     });
-  }, [hasWorkspace, canManage, unreadCount, unreadEmails]);
+  }, [hasWorkspace, canManage, unreadCount, unreadEmails, can]);
 
   return (
     <ProtectedRoute>
       <div className="flex h-screen overflow-hidden">
-        <Sidebar items={sidebarItems} />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <TopNavbar />
-          <main className="flex-1 overflow-y-auto p-6 bg-background">
+        <Sidebar items={sidebarItems} mobileOpen={mobileNav} onMobileClose={() => setMobileNav(false)} />
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <TopNavbar onMenu={() => setMobileNav(true)} />
+          <BillingEventsHandler />
+          <SubscriptionBanner />
+          <main className="flex-1 overflow-y-auto bg-background p-3 sm:p-6">
             {!isReady ? (
               <FullScreenSpinner label="Cargando tu espacio de trabajo..." />
             ) : !allowed ? (

@@ -45,13 +45,13 @@ const values = [
   {
     icon: ShieldCheck,
     title: "Seguridad Primero",
-    desc: "Arquitectura multi-tenant con aislamiento completo, cifrado y cumplimiento de estándares.",
+    desc: "Datos aislados por empresa, conexiones cifradas y credenciales protegidas.",
     gradient: "from-orange-500 to-red-500",
   },
   {
     icon: Rocket,
     title: "Escalar sin Fricción",
-    desc: "Desde un solo agente hasta cientos. La plataforma crece contigo sin migraciones ni límites.",
+    desc: "Planes de 1 a 30 usuarios y de 1 a 25 empresas. Cambias de plan cuando lo necesites.",
     gradient: "from-green-500 to-emerald-500",
   },
   {
@@ -218,7 +218,7 @@ export default function AboutPage() {
                     </p>
                     <p className="text-lg text-default-500 leading-relaxed">
                       <strong className="text-foreground">AXENTYC</strong> es nuestro producto
-                      insignia: una plataforma omnichannel con CRM, automatizaciones e IA
+                      insignia: una plataforma omnichannel con CRM, facturación y automatizaciones
                       diseñada para que equipos de ventas y soporte conviertan cada
                       conversación en una oportunidad de negocio.
                     </p>
@@ -243,8 +243,8 @@ export default function AboutPage() {
             {[
               { value: "2023", label: "Fundación", icon: Rocket },
               { value: "Miami", label: "Sede principal", icon: MapPin },
-              { value: "5+", label: "Canales integrados", icon: Zap },
-              { value: "99.9%", label: "Uptime SLA", icon: TrendingUp },
+              { value: "4", label: "Canales conectados hoy", icon: Zap },
+              { value: "14 días", label: "Prueba gratis, sin tarjeta", icon: TrendingUp },
             ].map((stat, idx) => {
               const Icon = stat.icon;
               return (

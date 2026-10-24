@@ -19,7 +19,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-const publicRoutes = ["/", "/pricing", "/about", "/blog", "/docs", "/terms", "/privacy"];
+const publicRoutes = ["/", "/pricing", "/about", "/blog", "/docs", "/terms", "/privacy", "/data-deletion"];
 const authRoutes = ["/auth/login", "/auth/register", "/auth/forgot-password", "/auth/reset-password"];
 const workspaceRoutes = [
   "/dashboard",
@@ -31,8 +31,6 @@ const workspaceRoutes = [
   "/analytics",
   "/integrations",
   "/inbox",
-  "/comments-fb",
-  "/live-chat",
 ];
 const adminRoutes = ["/team", "/workspace-settings", "/account", "/settings"];
 
@@ -41,7 +39,7 @@ const doneItems = [
   "Tenant/Account con suscripción manual",
   "Workspace default y selector activo",
   "Billing interno con cambio/cancelación/reactivación",
-  "Planes Free, Starter, Pro y Business",
+  "Planes Free, Starter, Pro y Agency",
   "Límites por canales conectados",
   "Meta/Facebook base con Facebook Page e Instagram",
   "Email integration y Chat Widget",
@@ -50,11 +48,9 @@ const doneItems = [
 ];
 
 const nextItems = [
-  "Completar Team: miembros, invitaciones, roles y acceso por workspace",
-  "Pulir Integrations: Meta assets, permisos, reconexión y cupo visible",
-  "Completar Account: cambio de contraseña, edición de perfil y Stripe portal",
-  "Completar Workspace: miembros, business hours, preferencias y permisos",
-  "Revisar páginas operativas para que el workspace activo sea evidente",
+  "WhatsApp Business",
+  "TikTok y YouTube",
+  "Sugerencias, resúmenes y clasificación con IA",
 ];
 
 const modelCards = [

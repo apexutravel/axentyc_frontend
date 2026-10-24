@@ -12,38 +12,35 @@ import { Eye, EyeOff, Mail, Lock, User, Building2, Check, AlertCircle } from "lu
 import { AuthService } from "@/lib/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-
-const planInfo: Record<string, { name: string; color: "default" | "primary" | "secondary"; description: string }> = {
-  free: {
-    name: "Free",
-    color: "default",
-    description: "Para explorar con límites básicos",
-  },
-  starter: {
-    name: "Starter",
-    color: "default",
-    description: "14 días de prueba · luego $29/mes",
-  },
-  pro: {
-    name: "Pro",
-    color: "primary",
-    description: "14 días de prueba · luego $79/mes",
-  },
-  business: {
-    name: "Business",
-    color: "secondary",
-    description: "14 días de prueba · luego $199/mes",
-  },
-};
+import { BillingService, PlanDefinition } from "@/lib/billing";
 
 function RegisterForm() {
   const router = useRouter();
   const { refreshUser } = useAuth();
   const searchParams = useSearchParams();
   const requestedPlan = searchParams.get("plan") || "starter";
-  const selectedPlan = requestedPlan === "agency" ? "business" : requestedPlan;
+  const selectedPlan = requestedPlan === "business" ? "agency" : requestedPlan;
   const billingCycle = (searchParams.get("billing") === "yearly" ? "yearly" : "monthly") as "monthly" | "yearly";
-  const plan = planInfo[selectedPlan] || planInfo.starter;
+  const [plans, setPlans] = useState<PlanDefinition[]>([]);
+
+  useEffect(() => {
+    BillingService.plans()
+      .then((res) => setPlans((((res as any)?.data ?? res) as PlanDefinition[]) || []))
+      .catch(() => undefined);
+  }, []);
+
+  // Plan name, price and trial always come from the API (same source as /pricing)
+  const apiPlan = plans.find((p) => p.key === selectedPlan) || plans.find((p) => p.key === "starter");
+  const price = apiPlan ? (billingCycle === "yearly" ? apiPlan.yearlyPrice : apiPlan.monthlyPrice) : 0;
+  const plan = {
+    name: apiPlan?.name || selectedPlan,
+    color: (apiPlan?.recommended ? "primary" : "default") as "default" | "primary",
+    description: !apiPlan
+      ? ""
+      : apiPlan.monthlyPrice === 0
+        ? "Gratis, sin tarjeta y sin vencimiento"
+        : `${apiPlan.trialDays} días de prueba gratis, sin tarjeta · luego ${price}/mes${billingCycle === "yearly" ? " (facturado anualmente)" : ""}`,
+  };
 
   const [isVisible, setIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

@@ -10,7 +10,7 @@ export default function TermsPage() {
     <div className="mx-auto max-w-3xl px-6 py-16">
       <h1 className="text-3xl font-bold mb-2">Términos y Condiciones del Servicio</h1>
       <p className="text-sm text-default-400 mb-10">
-        Última actualización: {new Date().toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric" })}
+        Última actualización: 24 de octubre de 2026
       </p>
 
       <div className="prose prose-sm dark:prose-invert max-w-none space-y-8 text-default-600">

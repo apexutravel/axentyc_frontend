@@ -35,6 +35,10 @@ export interface Workspace {
     invoiceTerms?: string;
     paymentTerms?: string;
     footerNote?: string;
+    language?: string;
+    invoicePrefix?: string;
+    quotePrefix?: string;
+    paymentDays?: string;
   };
   businessHours?: Record<string, any>;
   type: 'default' | 'brand' | 'client' | 'branch';

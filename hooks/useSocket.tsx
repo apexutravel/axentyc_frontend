@@ -38,7 +38,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
   const { tenant } = useAuth();
 
   useEffect(() => {
-    console.log("[Socket] Creating connection to:", WS_URL);
+    
     const s = io(WS_URL, {
       transports: ["websocket", "polling"],
       withCredentials: true,
@@ -47,17 +47,17 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     socketRef.current = s;
 
     s.on("connect", () => {
-      console.log("[Socket] ✅ Connected:", s.id);
+      
       setIsConnected(true);
 
       // Auto-join tenant room on connect / reconnect
       const tid = tenantIdRef.current;
       if (tid) {
-        console.log("[Socket] Auto-joining tenant room on connect:", tid);
+        
         s.emit("join:tenant", tid);
         setTenantJoined(true);
       } else {
-        console.log("[Socket] Connected but no tenant ID stored yet");
+        
       }
 
       // Re-apply all subscriptions on reconnect
@@ -68,7 +68,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     });
 
     s.on("disconnect", (reason) => {
-      console.log("[Socket] ❌ Disconnected:", reason);
+      
       setIsConnected(false);
       setTenantJoined(false);
     });
@@ -93,7 +93,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     });
 
     return () => {
-      console.log("[Socket] Cleaning up connection");
+      
       s.removeAllListeners();
       s.disconnect();
       socketRef.current = null;
@@ -108,12 +108,12 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       setTenantJoined(false);
       return;
     }
-    console.log("[Socket] Auth provided tenant ID:", tenant.id);
+    
     tenantIdRef.current = tenant.id;
     setTenantIdState(tenant.id);
     const s = socketRef.current;
     if (s?.connected) {
-      console.log("[Socket] Joining tenant due to Auth effect:", tenant.id);
+      
       s.emit("join:tenant", tenant.id);
       setTenantJoined(true);
     }
@@ -125,7 +125,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     if (!isConnected || !tenantId) return;
     const s = socketRef.current;
     if (!s?.connected) return;
-    console.log("[Socket] Effect safety-net: joining tenant room:", tenantId);
+    
     s.emit("join:tenant", tenantId);
     setTenantJoined(true);
   }, [isConnected, tenantId]);
@@ -135,11 +135,11 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     setTenantIdState(tid);
     const s = socketRef.current;
     if (s?.connected) {
-      console.log("[Socket] Joining tenant room immediately:", tid);
+      
       s.emit("join:tenant", tid);
       setTenantJoined(true);
     } else {
-      console.log("[Socket] Tenant ID stored, will join on connect:", tid);
+      
     }
   }, []);
 

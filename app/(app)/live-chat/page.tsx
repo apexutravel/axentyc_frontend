@@ -756,7 +756,6 @@ export default function LiveChatPage() {
   // Polling fallback: refresh conversations every 10s
   useEffect(() => {
     const interval = setInterval(() => {
-      console.log("[LiveChat] Polling refresh conversations");
       loadConversations();
     }, 10000);
 
@@ -857,7 +856,6 @@ export default function LiveChatPage() {
 
   useEffect(() => {
     const handleNewMessage = (data: any) => {
-      console.log("[LiveChat] message event received:", data);
       const incomingConversationId = data?.conversationId || data?.message?.conversationId;
       const raw = data?.message || data;
       if (selectedConv && incomingConversationId === selectedConv._id) {
@@ -897,7 +895,6 @@ export default function LiveChatPage() {
     };
 
     const handleConvUpdated = (data: any) => {
-      console.log("[LiveChat] conversation.updated:", data);
       if (data?._id) {
         setConversations((prev) =>
           prev.map((c) =>
@@ -928,7 +925,6 @@ export default function LiveChatPage() {
     };
 
     const handleStatusUpdated = (data: any) => {
-      console.log("[LiveChat] message.status.updated:", data);
       if (data.status === "read" && selectedConv && data.conversationId === selectedConv._id) {
         setMessages((prev) =>
           prev.map((m) =>
@@ -943,7 +939,6 @@ export default function LiveChatPage() {
     };
 
     const handleContactEnriched = (data: any) => {
-      console.log("[LiveChat] contact.enriched:", data);
       if (selectedConv && data.conversationId === selectedConv._id && data.data) {
         setSelectedConv((prev) =>
           prev ? { ...prev, contactId: { ...prev.contactId, ...data.data } } : prev
@@ -970,8 +965,6 @@ export default function LiveChatPage() {
     };
 
     const handleConversationCreated = (data: any) => {
-      console.log("[LiveChat] conversation.created:", data);
-      
       // Optimistically add to conversations list
       setConversations((prev) => {
         const exists = prev.some((c) => c._id === data._id);

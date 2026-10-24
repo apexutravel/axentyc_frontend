@@ -4,7 +4,7 @@ import { Avatar } from "@heroui/avatar";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
 import { Popover, PopoverTrigger, PopoverContent } from "@heroui/popover";
 import { ThemeSwitch } from "@/components/theme-switch";
-import { Bell, Wifi, WifiOff, Facebook, Instagram, MessageCircle, Mail, Globe, Building2, User } from "lucide-react";
+import { Menu, Bell, Wifi, WifiOff, Facebook, Instagram, MessageCircle, Mail, Globe, Building2, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotificationCenter, NotificationType, ChatNotification } from "@/contexts/NotificationCenterContext";
 import { useSocket } from "@/hooks/useSocket";
@@ -32,7 +32,7 @@ function getPlatformIcon(platform?: string) {
   return <Globe size={28} className="text-default-500" />;
 }
 
-export function TopNavbar() {
+export function TopNavbar({ onMenu }: { onMenu?: () => void }) {
   const router = useRouter();
   const { user, tenant, logout } = useAuth();
   const { isConnected, tenantJoined } = useSocket();
@@ -87,8 +87,12 @@ export function TopNavbar() {
     : 'U';
 
   return (
-    <header className="h-16 border-b border-divider bg-content1 flex items-center justify-between px-6 sticky top-0 z-30">
-      <div className="flex-1" />
+    <header className="h-16 border-b border-divider bg-content1 flex items-center justify-between px-3 sm:px-6 sticky top-0 z-30">
+      <div className="flex flex-1 items-center">
+        <button aria-label="Abrir menú" className="flex h-10 w-10 items-center justify-center rounded-xl text-default-600 hover:bg-default-100 lg:hidden" type="button" onClick={onMenu}>
+          <Menu size={22} />
+        </button>
+      </div>
 
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1.5 mr-1" title={`Socket: ${isConnected ? 'connected' : 'disconnected'} | Tenant: ${tenantJoined ? 'joined' : 'pending'}`}>

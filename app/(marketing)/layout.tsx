@@ -81,6 +81,7 @@ export default function MarketingLayout({
             <NextLink className="hover:text-foreground transition-colors" href="/about">Empresa</NextLink>
             <NextLink className="hover:text-foreground transition-colors" href="/privacy">Privacidad</NextLink>
             <NextLink className="hover:text-foreground transition-colors" href="/terms">Términos</NextLink>
+            <NextLink className="hover:text-foreground transition-colors" href="/data-deletion">Eliminar mis datos</NextLink>
             <NextLink className="hover:text-foreground transition-colors" href="mailto:contacto@apexucode.com">Contacto</NextLink>
           </nav>
           <p className="text-xs text-default-400">&copy; {new Date().getFullYear()} Apex Universal Code LLC</p>

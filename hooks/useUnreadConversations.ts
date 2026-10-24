@@ -45,12 +45,12 @@ export function useUnreadConversations() {
   // Listen to socket events for real-time updates
   useEffect(() => {
     const cleanup1 = subscribe('message.received', () => {
-      console.log('[useUnreadConversations] Message received, refreshing count');
+      
       fetchUnreadCount();
     });
 
     const cleanup2 = subscribe('conversation.updated', () => {
-      console.log('[useUnreadConversations] Conversation updated, refreshing count');
+      
       fetchUnreadCount();
     });
 

@@ -1,53 +1,40 @@
-# Next.js & HeroUI Template
+# AXENTYC Frontend
 
-This is a template for creating applications using Next.js 14 (app directory) and HeroUI (v2).
+Aplicación web de AXENTYC: Contact Center, CRM, catálogo, cotizaciones, facturas, pagos, automatizaciones y reportes.
 
-[Try it on CodeSandbox](https://githubbox.com/heroui-inc/heroui/next-app-template)
+Next.js 15 · React 18 · HeroUI · Tailwind CSS · Socket.IO.
 
-## Technologies Used
-
-- [Next.js 14](https://nextjs.org/docs/getting-started)
-- [HeroUI v2](https://heroui.com/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Tailwind Variants](https://tailwind-variants.org)
-- [TypeScript](https://www.typescriptlang.org/)
-- [Framer Motion](https://www.framer.com/motion/)
-- [next-themes](https://github.com/pacocoursey/next-themes)
-
-## How to Use
-
-### Use the template with create-next-app
-
-To create a new project based on this template using `create-next-app`, run the following command:
-
-```bash
-npx create-next-app -e https://github.com/heroui-inc/next-app-template
-```
-
-### Install dependencies
-
-You can use one of them `npm`, `yarn`, `pnpm`, `bun`, Example using `npm`:
+## Puesta en marcha
 
 ```bash
 npm install
-```
-
-### Run the development server
-
-```bash
 npm run dev
 ```
 
-### Setup pnpm (optional)
+La aplicación abre en `http://localhost:3000`. Configura la URL del API en `.env.local`:
 
-If you are using `pnpm`, you need to add the following code to your `.npmrc` file:
-
-```bash
-public-hoist-pattern[]=*@heroui/*
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3003/api/v1
 ```
 
-After modifying the `.npmrc` file, you need to run `pnpm install` again to ensure that the dependencies are installed correctly.
+El backend debe estar iniciado y su `CORS_ORIGIN` debe incluir esta URL.
 
-## License
+## Rutas principales
 
-Licensed under the [MIT license](https://github.com/heroui-inc/next-app-template/blob/main/LICENSE).
+- `/contact-center`: mensajes directos y comentarios de Facebook/Instagram.
+- `/contacts`, `/leads`, `/deals`: CRM y pipeline.
+- `/quotes`, `/invoices`, `/payments`: flujo comercial y cobros.
+- `/automations`: reglas deterministas; la IA todavía está marcada como próxima.
+- `/analytics`: reportes de conversaciones, ventas y embudo.
+- `/integrations`: Meta, correo y widget web.
+
+Las rutas antiguas `/live-chat`, `/comments` y `/comments-fb` redirigen al Contact Center.
+
+## Verificación
+
+```bash
+npx tsc --noEmit
+npm run build
+```
+
+La prueba funcional completa está en el backend: `npm run test:smoke`. Las comprobaciones que requieren servicios reales están en `../docs/MANUAL_TEST_CHECKLIST.md`.

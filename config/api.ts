@@ -25,6 +25,8 @@ export const API_ENDPOINTS = {
     refresh: `${API_URL}/auth/refresh`,
     logout: `${API_URL}/auth/logout`,
     switchAccount: `${API_URL}/auth/switch-account`,
+    forgotPassword: `${API_URL}/auth/forgot-password`,
+    resetPassword: `${API_URL}/auth/reset-password`,
   },
   widget: {
     get: `${API_URL}/chat-widget`,
@@ -95,6 +97,8 @@ export const API_ENDPOINTS = {
   billing: {
     plans: `${API_URL}/billing/plans`,
     subscription: `${API_URL}/billing/subscription`,
+    paymentConfig: `${API_URL}/billing/payment-config`,
+    portal: `${API_URL}/billing/portal`,
     changePlan: `${API_URL}/billing/change-plan`,
     cancel: `${API_URL}/billing/cancel`,
     reactivate: `${API_URL}/billing/reactivate`,

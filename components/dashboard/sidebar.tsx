@@ -21,6 +21,8 @@ import {
   Settings,
   Building2,
   User,
+  CheckSquare,
+  MessageCircle,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -29,6 +31,7 @@ import {
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWorkspaces } from "@/contexts/WorkspaceContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const iconMap: Record<string, React.ComponentType<any>> = {
   LayoutDashboard,
@@ -47,6 +50,8 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   Settings,
   Building2,
   User,
+  CheckSquare,
+  MessageCircle,
 };
 
 interface SidebarItem {
@@ -60,10 +65,14 @@ interface SidebarItem {
 
 interface SidebarProps {
   items: SidebarItem[];
+  /** Small screens: the menu is a drawer */
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
-export function Sidebar({ items }: SidebarProps) {
+export function Sidebar({ items, mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
+  const { logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
   const { workspaces, activeWorkspace, activeWorkspaceId, setActiveWorkspaceId, isLoading: workspacesLoading, hasWorkspace, canManage } = useWorkspaces();
@@ -74,9 +83,11 @@ export function Sidebar({ items }: SidebarProps) {
   ].filter((group) => group.items.length > 0);
 
   return (
+    <>
+    {mobileOpen && <div aria-hidden className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={onMobileClose} />}
     <motion.aside
       animate={{ width: collapsed ? 72 : 256 }}
-      className="h-screen sticky top-0 flex flex-col border-r border-divider bg-content1 z-40"
+      className={`fixed inset-y-0 left-0 z-50 flex h-screen flex-col border-r border-divider bg-content1 shadow-xl transition-transform duration-200 lg:sticky lg:top-0 lg:z-40 lg:translate-x-0 lg:shadow-none ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}
       initial={false}
       transition={{ duration: 0.2, ease: "easeInOut" }}
     >
@@ -380,16 +391,17 @@ export function Sidebar({ items }: SidebarProps) {
       </nav>
 
       <div className="border-t border-divider p-3 space-y-1">
-        {!collapsed && (
-          <NextLink
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-default-500 hover:bg-danger-50 hover:text-danger transition-all duration-150"
-            href="/logout"
-          >
-            <LogOut size={20} />
-            <span className="text-sm">Cerrar Sesi&oacute;n</span>
-          </NextLink>
-        )}
+        <button
+          className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-default-500 transition-all duration-150 hover:bg-danger-50 hover:text-danger ${collapsed ? "justify-center" : ""}`}
+          title="Cerrar sesión"
+          type="button"
+          onClick={() => logout()}
+        >
+          <LogOut size={20} />
+          {!collapsed && <span className="text-sm">Cerrar Sesi&oacute;n</span>}
+        </button>
       </div>
     </motion.aside>
+    </>
   );
 }

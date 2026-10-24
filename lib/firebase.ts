@@ -30,20 +30,20 @@ export async function requestNotificationPermission(): Promise<string | null> {
   try {
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
-      console.log('[FCM] Permission denied');
+      
       return null;
     }
 
     // Register service worker
     const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-    console.log('[FCM] Service Worker registered:', registration);
+    
 
     const token = await getToken(messaging, {
       vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
       serviceWorkerRegistration: registration,
     });
     
-    console.log('[FCM] Token obtained:', token);
+    
     return token;
   } catch (error) {
     console.error('[FCM] Error getting token:', error);
@@ -57,7 +57,7 @@ export function onForegroundMessage(callback: (payload: any) => void): () => voi
   }
   
   return onMessage(messaging, (payload) => {
-    console.log('[FCM] Foreground message received:', payload);
+    
     callback(payload);
   });
 }
@@ -70,7 +70,7 @@ export async function deleteNotificationToken(): Promise<boolean> {
   try {
     if (!messaging) return true;
     const ok = await deleteToken(messaging);
-    console.log('[FCM] Token deleted:', ok);
+    
     return ok;
   } catch (e) {
     console.warn('[FCM] Failed to delete token:', e);

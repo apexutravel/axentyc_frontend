@@ -28,16 +28,20 @@ import {
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { BillingService, PlanDefinition } from "@/lib/billing";
+import { useBilling } from "@/contexts/BillingContext";
+import BillingPanel from "@/components/billing/BillingPanel";
 
 const statusLabels: Record<string, string> = {
-  active: "Activa",
+  free: "Plan gratuito",
   trialing: "En prueba",
+  trial_expired: "Prueba terminada",
+  active: "Activa",
+  past_due: "Pago pendiente",
+  unpaid: "Sin pagar",
   canceled: "Cancelada",
-  unpaid: "Pendiente de pago",
-  paused: "Pausada",
-  past_due: "Pago vencido",
+  locked: "Bloqueada",
 };
 
 function formatDate(value?: string | Date) {
@@ -51,78 +55,20 @@ function formatDate(value?: string | Date) {
 
 export default function AccountPage() {
   const { user } = useAuth();
-  const [plans, setPlans] = useState<PlanDefinition[]>([]);
-  const [subscription, setSubscription] = useState<any>(null);
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
-  const [isBillingLoading, setIsBillingLoading] = useState(false);
-
-  const loadBilling = async () => {
-    const [plansData, subscriptionData] = await Promise.all([
-      BillingService.plans(),
-      BillingService.subscription(),
-    ]);
-    const normalizedPlans = ((plansData as any)?.data ?? plansData) as PlanDefinition[];
-    const normalizedSubscription = (subscriptionData as any)?.data ?? subscriptionData;
-    setPlans(normalizedPlans);
-    setSubscription(normalizedSubscription);
-    setBillingCycle(normalizedSubscription?.subscription?.billingCycle || "monthly");
-  };
+  const { subscription: billing, access } = useBilling();
+  const searchParams = useSearchParams();
+  const [tab, setTab] = useState<string>(searchParams.get("tab") || "overview");
 
   useEffect(() => {
-    loadBilling().catch(() => undefined);
-  }, []);
+    const requested = searchParams.get("tab");
+    if (requested) setTab(requested);
+  }, [searchParams]);
 
-  const handleChangePlan = async (planKey: string) => {
-    setIsBillingLoading(true);
-    try {
-      await BillingService.changePlan(planKey, billingCycle);
-      await loadBilling();
-      toast.success("Plan actualizado");
-    } catch (error: any) {
-      toast.error(error.message || "No se pudo cambiar el plan");
-    } finally {
-      setIsBillingLoading(false);
-    }
-  };
-
-  const handleCancel = async () => {
-    setIsBillingLoading(true);
-    try {
-      await BillingService.cancel();
-      await loadBilling();
-      toast.success("Cancelación programada al final del periodo");
-    } catch (error: any) {
-      toast.error(error.message || "No se pudo cancelar");
-    } finally {
-      setIsBillingLoading(false);
-    }
-  };
-
-  const handleReactivate = async () => {
-    setIsBillingLoading(true);
-    try {
-      await BillingService.reactivate();
-      await loadBilling();
-      toast.success("Suscripción reactivada");
-    } catch (error: any) {
-      toast.error(error.message || "No se pudo reactivar");
-    } finally {
-      setIsBillingLoading(false);
-    }
-  };
-
-  const currentPlanKey = subscription?.subscription?.planKey || subscription?.plan?.key;
-  const usage = subscription?.usage?.connectedAssets;
-  const connectedAssetsLimit = subscription?.plan?.limits?.maxConnectedAssets || 0;
-  const usedAssets = usage?.total || 0;
+  const currentPlan = billing?.plan;
+  const subscriptionStatus = access?.state || "active";
+  const usedAssets = billing?.usage.connectedAssets.total ?? 0;
+  const connectedAssetsLimit = currentPlan?.limits.maxConnectedAssets ?? 0;
   const usagePercent = connectedAssetsLimit > 0 ? Math.min((usedAssets / connectedAssetsLimit) * 100, 100) : 0;
-  const subscriptionStatus = subscription?.subscription?.status || subscription?.status || "active";
-  const currentPlan = subscription?.plan;
-  const currentPrice = currentPlan
-    ? billingCycle === "yearly"
-      ? currentPlan.yearlyPrice
-      : currentPlan.monthlyPrice
-    : 0;
 
   return (
     <motion.div animate={{ opacity: 1, y: 0 }} className="space-y-6" initial={{ opacity: 0, y: 20 }}>
@@ -158,6 +104,8 @@ export default function AccountPage() {
       </section>
 
       <Tabs
+        selectedKey={tab}
+        onSelectionChange={(key) => setTab(String(key))}
         classNames={{
           tabList: "bg-content1 border border-divider p-1",
           cursor: "bg-primary",
@@ -286,160 +234,7 @@ export default function AccountPage() {
         </Tab>
 
         <Tab key="billing" title="Plan y facturación">
-          <div className="space-y-6 mt-6">
-            <Card className="overflow-hidden border border-divider">
-              <CardBody className="p-0">
-                <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px]">
-                  <div className="space-y-5 p-6">
-                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                      <div>
-                        <p className="text-sm font-semibold text-default-500">Suscripción actual</p>
-                        <h3 className="mt-1 text-3xl font-black">{currentPlan?.name || "Cargando..."}</h3>
-                        <p className="mt-1 text-sm text-default-500">
-                          {statusLabels[subscriptionStatus] || subscriptionStatus} · Ciclo {billingCycle === "yearly" ? "anual" : "mensual"}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button color="danger" isDisabled={isBillingLoading || subscription?.subscription?.cancelAtPeriodEnd} startContent={<XCircle size={16} />} variant="flat" onPress={handleCancel}>
-                          Cancelar
-                        </Button>
-                        <Button color="primary" isDisabled={isBillingLoading} startContent={<RotateCcw size={16} />} variant="flat" onPress={handleReactivate}>
-                          Reactivar
-                        </Button>
-                      </div>
-                    </div>
-
-                    {subscription?.subscription?.cancelAtPeriodEnd && (
-                      <div className="flex items-start gap-3 rounded-2xl border border-warning/30 bg-warning/10 p-4 text-sm text-warning-700 dark:text-warning-400">
-                        <AlertCircle className="mt-0.5" size={18} />
-                        <span>Tu cancelación está programada al final del periodo. Puedes reactivar antes de esa fecha.</span>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <div className="rounded-2xl border border-divider bg-content2/50 p-4">
-                        <p className="text-xs text-default-500">Precio</p>
-                        <p className="mt-1 text-2xl font-black">{currentPrice === 0 ? "Gratis" : `$${currentPrice}`}</p>
-                      </div>
-                      <div className="rounded-2xl border border-divider bg-content2/50 p-4">
-                        <p className="text-xs text-default-500">Periodo actual</p>
-                        <p className="mt-1 text-sm font-bold">Hasta {formatDate(subscription?.subscription?.currentPeriodEnd)}</p>
-                      </div>
-                      <div className="rounded-2xl border border-divider bg-content2/50 p-4">
-                        <p className="text-xs text-default-500">Canales</p>
-                        <p className="mt-1 text-2xl font-black">{usedAssets}/{connectedAssetsLimit || "-"}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-divider bg-content2/40 p-6 lg:border-l lg:border-t-0">
-                    <Select label="Ciclo de facturación" selectedKeys={[billingCycle]} variant="bordered" onSelectionChange={(keys) => {
-                      const next = Array.from(keys)[0] as "monthly" | "yearly";
-                      if (next) setBillingCycle(next);
-                    }}>
-                      <SelectItem key="monthly">Mensual</SelectItem>
-                      <SelectItem key="yearly">Anual (-20%)</SelectItem>
-                    </Select>
-                    <p className="mt-3 text-xs text-default-500">
-                      Cambiar el ciclo se aplica cuando selecciones un plan. En Stripe real esto abrirá checkout o portal de billing.
-                    </p>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-              {plans.map((plan) => {
-                const price = billingCycle === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
-                const isCurrent = currentPlanKey === plan.key;
-
-                return (
-                  <Card key={plan.key} className={`relative overflow-hidden border ${isCurrent ? "border-primary shadow-lg shadow-primary/10" : "border-divider"}`}>
-                    {isCurrent && <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary to-secondary" />}
-                    <CardBody className="gap-4 p-5">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h4 className="text-lg font-black">{plan.name}</h4>
-                          <p className="mt-1 text-xs text-default-500">{plan.description}</p>
-                        </div>
-                        {isCurrent && <Chip color="primary" size="sm" variant="flat">Actual</Chip>}
-                      </div>
-                      <div>
-                        <span className="text-3xl font-black">{price === 0 ? "Gratis" : `$${price}`}</span>
-                        {price > 0 && <span className="text-xs text-default-500">/mes</span>}
-                      </div>
-                      <div className="space-y-2 text-xs text-default-600">
-                        <p>{plan.limits.maxWorkspaces} workspaces</p>
-                        <p>{plan.limits.maxUsers} usuarios</p>
-                        <p>{plan.limits.maxConnectedAssets ?? plan.limits.maxSocialAccounts} canales conectados</p>
-                        <p>{plan.limits.maxConversationsMonthly.toLocaleString()} conversaciones/mes</p>
-                      </div>
-                      <Button color={isCurrent ? "default" : "primary"} endContent={!isCurrent && <ArrowUpRight size={15} />} isDisabled={isCurrent || isBillingLoading} size="sm" variant={isCurrent ? "flat" : "solid"} onPress={() => handleChangePlan(plan.key)}>
-                        {isCurrent ? "Plan actual" : "Cambiar plan"}
-                      </Button>
-                    </CardBody>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
-        </Tab>
-
-        <Tab key="payments" title="Pagos">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-            <Card className="border border-divider">
-              <CardBody className="gap-5 p-6">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-2xl bg-primary/10 p-3 text-primary">
-                    <WalletCards size={22} />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold">Método de pago</h3>
-                    <p className="text-sm text-default-500">Tarjeta principal para suscripción y overages.</p>
-                  </div>
-                </div>
-                <div className="rounded-3xl border border-dashed border-divider bg-content2/50 p-8 text-center">
-                  <CreditCard className="mx-auto text-default-400" size={34} />
-                  <p className="mt-3 font-bold">Sin tarjeta vinculada</p>
-                  <p className="mx-auto mt-1 max-w-sm text-sm text-default-500">
-                    El billing actual es manual. Cuando conectemos Stripe, aquí se abrirá el portal para agregar tarjetas.
-                  </p>
-                </div>
-                <Button isDisabled color="primary" startContent={<CreditCard size={16} />}>
-                  Vincular tarjeta
-                </Button>
-              </CardBody>
-            </Card>
-
-            <Card className="border border-divider">
-              <CardBody className="gap-5 p-6">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-2xl bg-primary/10 p-3 text-primary">
-                    <FileText size={22} />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold">Facturas y recibos</h3>
-                    <p className="text-sm text-default-500">Historial financiero de la cuenta.</p>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between rounded-2xl border border-divider p-4">
-                    <div className="flex items-center gap-3">
-                      <CalendarClock className="text-default-400" size={18} />
-                      <div>
-                        <p className="text-sm font-bold">Próxima factura</p>
-                        <p className="text-xs text-default-500">{formatDate(subscription?.subscription?.currentPeriodEnd)}</p>
-                      </div>
-                    </div>
-                    <Chip variant="flat">Manual</Chip>
-                  </div>
-                  <div className="rounded-2xl border border-divider p-4 text-sm text-default-500">
-                    No hay facturas disponibles todavía. Stripe agregará invoices, recibos descargables y estado de pagos.
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-          </div>
+          <BillingPanel />
         </Tab>
       </Tabs>
     </motion.div>
