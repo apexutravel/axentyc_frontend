@@ -402,6 +402,47 @@ export default function ContactCenterPage() {
     [emit, selectedConv]
   );
 
+  // Messenger / Instagram: show "escribiendo..." to the customer while the agent types
+  const metaTypingRef = useRef<{ active: boolean; sentAt: number; timer: ReturnType<typeof setTimeout> | null }>({
+    active: false,
+    sentAt: 0,
+    timer: null,
+  });
+
+  const stopMetaTyping = useCallback((notify: boolean, conversationId?: string) => {
+    const state = metaTypingRef.current;
+    if (state.timer) clearTimeout(state.timer);
+    state.timer = null;
+    const wasActive = state.active;
+    state.active = false;
+    state.sentAt = 0;
+    if (notify && wasActive && conversationId) {
+      api.post(API_ENDPOINTS.conversations.typing(conversationId), { isTyping: false }).catch(() => undefined);
+    }
+  }, []);
+
+  const notifyMetaTyping = useCallback(
+    (hasText: boolean) => {
+      if (!selectedConv) return;
+      const id = selectedConv._id;
+      const state = metaTypingRef.current;
+      if (!hasText) {
+        stopMetaTyping(true, id);
+        return;
+      }
+      if (state.timer) clearTimeout(state.timer);
+      const now = Date.now();
+      // Meta keeps the indicator for ~20s: refresh it every 8s instead of on every keystroke
+      if (!state.active || now - state.sentAt > 8000) {
+        state.active = true;
+        state.sentAt = now;
+        api.post(API_ENDPOINTS.conversations.typing(id), { isTyping: true }).catch(() => undefined);
+      }
+      state.timer = setTimeout(() => stopMetaTyping(true, id), 3000);
+    },
+    [selectedConv, stopMetaTyping]
+  );
+
   // --- Data Loading ---
 
   const loadConversations = useCallback(async () => {
@@ -631,6 +672,7 @@ export default function ContactCenterPage() {
     const content = messageInput.trim();
     setMessageInput("");
     emitAdminTyping(false);
+    stopMetaTyping(false); // sending a message clears the indicator on Meta's side
 
     const tempMsg: Message = {
       _id: `temp_${Date.now()}`,
@@ -1069,11 +1111,14 @@ export default function ContactCenterPage() {
         return;
       }
       if (data.status === "read" && selectedConv && data.conversationId === selectedConv._id) {
+        // Messenger / Instagram tell us how far the customer read; the widget reads everything
+        const upTo = data.readUpTo ? new Date(data.readUpTo).getTime() : null;
         setMessages((prev) =>
           prev.map((m) =>
             m.direction === "outbound" &&
             m.status !== "failed" &&
-            m.status !== "pending"
+            m.status !== "pending" &&
+            (upTo === null || new Date(m.createdAt).getTime() <= upTo)
               ? { ...m, status: "read" }
               : m
           )
@@ -1225,6 +1270,7 @@ export default function ContactCenterPage() {
   }, [subscribe, selectedConv, loadConversations, activeTab, selectedFbPage, selectedFbPost]);
 
   useEffect(() => {
+    stopMetaTyping(false);
     setVisitorTyping(false);
     adminTypingStateRef.current = false;
     if (typingTimeoutRef.current) {
@@ -2609,6 +2655,14 @@ export default function ContactCenterPage() {
                     }}
                     onValueChange={(value) => {
                       setMessageInput(value);
+
+                      if (
+                        (selectedConv?.channel === "facebook" || selectedConv?.channel === "instagram") &&
+                        !(selectedConv.metadata as any)?.isComment
+                      ) {
+                        notifyMetaTyping(value.trim().length > 0);
+                        return;
+                      }
 
                       if (!selectedConv?.metadata?.widgetId || !selectedConv?.metadata?.visitorId) {
                         return;

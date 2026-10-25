@@ -42,6 +42,7 @@ export const API_ENDPOINTS = {
     detail: (id: string) => `${API_URL}/conversations/${id}`,
     messages: (id: string) => `${API_URL}/conversations/${id}/messages`,
     markRead: (id: string) => `${API_URL}/conversations/${id}/read`,
+    typing: (id: string) => `${API_URL}/conversations/${id}/typing`,
     delete: (id: string) => `${API_URL}/conversations/${id}`,
     update: (id: string) => `${API_URL}/conversations/${id}`,
   },
