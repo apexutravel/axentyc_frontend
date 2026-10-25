@@ -298,7 +298,8 @@ export function NotificationCenterProvider({ children }: { children: React.React
         
         
         unreadConversations.forEach((conv) => {
-          const lastMsg = conv?.lastMessage || {};
+          // The API returns lastMessage as plain text (older payloads sent an object)
+          const lastMsg = conv?.lastMessage && typeof conv.lastMessage === "object" ? conv.lastMessage : {};
           const name =
             conv?.contactId?.name ||
             conv?.contact?.name ||
@@ -306,7 +307,12 @@ export function NotificationCenterProvider({ children }: { children: React.React
             conv?.contactId?.socialProfiles?.facebook?.username ||
             lastMsg?.senderName ||
             "Visitante";
-          const content = (lastMsg?.content || conv?.subject || "").toString();
+          const content = (
+            (typeof conv?.lastMessage === "string" ? conv.lastMessage : "") ||
+            lastMsg?.content ||
+            conv?.subject ||
+            ""
+          ).toString();
           const platform = (conv?.channel || "").toLowerCase();
           const pageName = conv?.metadata?.pageName;
 
@@ -320,7 +326,7 @@ export function NotificationCenterProvider({ children }: { children: React.React
             platform: platform || undefined,
             pageName: pageName,
             workspaceId: conv?.workspaceId ? String(conv.workspaceId) : activeWorkspaceId,
-            createdAt: lastMsg?.createdAt || conv?.updatedAt || new Date().toISOString(),
+            createdAt: lastMsg?.createdAt || conv?.lastMessageAt || conv?.updatedAt || new Date().toISOString(),
             read: false,
           };
 

@@ -1780,7 +1780,7 @@ export default function ContactCenterPage() {
   const mobileDetail = isFbCommentsTab ? !!selectedFbPost : !!selectedConv;
 
   return (
-    <div className="h-[calc(100dvh-4rem)] min-h-0 flex flex-col overflow-hidden bg-gradient-to-br from-default-50 via-content1 to-default-100 -m-6">
+    <div className="h-[calc(100%+1.5rem)] sm:h-[calc(100%+3rem)] min-h-0 flex flex-col overflow-hidden bg-gradient-to-br from-default-50 via-content1 to-default-100 -m-3 sm:-m-6">
       {/* Top Bar with Tabs */}
       <div className="shrink-0 border-b border-divider/70 bg-content1/95 backdrop-blur-xl px-4 py-2.5 shadow-sm">
         <div className="flex items-center justify-between gap-4 mb-2">
@@ -1804,6 +1804,7 @@ export default function ContactCenterPage() {
           </Chip>
         </div>
         <Tabs
+          key={`cc-tabs-${unreadCounts.all}-${unreadCounts.messenger}-${unreadCounts.instagram}-${unreadCounts.whatsapp}`}
           aria-label="Contact Center Tabs"
           variant="solid"
           color="primary"
