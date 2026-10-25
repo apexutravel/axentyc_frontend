@@ -17,6 +17,7 @@ interface IgAccount {
   accountId: string;
   accountName: string;
   webhookError?: string | null;
+  lastWebhookAt?: string | null;
 }
 
 interface IgComment {
@@ -71,7 +72,7 @@ export default function InstagramComments() {
       const raw = res?.data?.accounts ?? res?.accounts ?? [];
       const list: IgAccount[] = raw
         .filter((a: any) => a.platform === "instagram" && a.status === "connected" && a.accountId)
-        .map((a: any) => ({ accountId: a.accountId, accountName: a.accountName, webhookError: a.metadata?.webhookError }));
+        .map((a: any) => ({ accountId: a.accountId, accountName: a.accountName, webhookError: a.metadata?.webhookError, lastWebhookAt: a.metadata?.lastWebhookAt }));
       setAccounts(list);
       setAccountId((current) => current || list[0]?.accountId || "");
     } catch {
@@ -255,6 +256,14 @@ export default function InstagramComments() {
             >
               {accounts.map((a) => <SelectItem key={a.accountId}>{`@${a.accountName}`}</SelectItem>)}
             </Select>
+          )}
+          {account && !account.webhookError && (
+            <p className="flex items-center gap-1.5 text-[11px] text-default-500">
+              <span className={`h-2 w-2 shrink-0 rounded-full ${account.lastWebhookAt ? "bg-success" : "bg-warning"}`} />
+              {account.lastWebhookAt
+                ? `Meta envía eventos en vivo · último ${formatDate(account.lastWebhookAt)}`
+                : "Meta aún no ha enviado eventos en vivo. Se revisa Instagram cada minuto, así que no pierdes mensajes, pero llegan con hasta 1 min de retraso."}
+            </p>
           )}
           {account?.webhookError && (
             <div className="flex gap-2 rounded-xl border border-warning/30 bg-warning/10 p-2.5 text-[11px] text-warning-700 dark:text-warning">

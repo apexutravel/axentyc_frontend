@@ -54,10 +54,13 @@ function applyWorkspaceScope(url: string, options: RequestInit, skipWorkspace?: 
   const nextOptions: RequestInit = { ...options };
   const nextUrl = new URL(url);
 
+  // Controllers read the workspace from the query string; the guard also accepts it in the body.
+  // Sending it in the query for every method keeps agents (non owner/admin) working on POST/PATCH/PUT.
+  if (!nextUrl.searchParams.has('workspaceId')) {
+    nextUrl.searchParams.set('workspaceId', workspaceId);
+  }
+
   if (method === 'GET' || method === 'DELETE') {
-    if (!nextUrl.searchParams.has('workspaceId')) {
-      nextUrl.searchParams.set('workspaceId', workspaceId);
-    }
     return { url: nextUrl.toString(), options: nextOptions };
   }
 
