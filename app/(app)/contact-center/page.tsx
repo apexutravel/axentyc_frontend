@@ -64,6 +64,7 @@ import { api } from "@/lib/api";
 import { API_ENDPOINTS, API_URL } from "@/config/api";
 import { useWorkspaces } from "@/contexts/WorkspaceContext";
 import ActivityPanel from "@/components/crm/ActivityPanel";
+import InstagramComments from "@/components/contact-center/InstagramComments";
 import QuickReplyButton, { useQuickReplies } from "@/components/crm/QuickReplies";
 import { useSocket } from "@/hooks/useSocket";
 import { useAuth } from "@/contexts/AuthContext";
@@ -1780,8 +1781,9 @@ export default function ContactCenterPage() {
 
       {/* Content Area */}
       <div className="flex-1 min-h-0 flex gap-0 overflow-hidden p-3 pt-2.5">
+      {isIgCommentsTab && <InstagramComments />}
       {/* Conversation List / Posts List */}
-      <div className={`${mobileDetail ? "hidden md:flex" : "flex"} w-full md:w-[360px] min-h-0 border flex-col rounded-3xl md:rounded-l-3xl md:rounded-r-none shadow-sm overflow-hidden transition-colors duration-300 ${tabTheme.panel}`}>
+      <div className={`${isIgCommentsTab ? "hidden" : mobileDetail ? "hidden md:flex" : "flex"} w-full md:w-[360px] min-h-0 border flex-col rounded-3xl md:rounded-l-3xl md:rounded-r-none shadow-sm overflow-hidden transition-colors duration-300 ${tabTheme.panel}`}>
         <div className={`shrink-0 p-4 border-b space-y-3 transition-colors duration-300 ${tabTheme.header}`}>
           <div className="flex items-center justify-between">
             <div>
@@ -2046,7 +2048,7 @@ export default function ContactCenterPage() {
       </div>
 
       {/* Chat Area / Post Detail */}
-      <div className={`${mobileDetail ? "flex" : "hidden md:flex"} flex-1 min-h-0 flex-col bg-content1/95 border border-divider/70 md:border-l-0 rounded-3xl md:rounded-none overflow-hidden shadow-sm`}>
+      <div className={`${isIgCommentsTab ? "hidden" : mobileDetail ? "flex" : "hidden md:flex"} flex-1 min-h-0 flex-col bg-content1/95 border border-divider/70 md:border-l-0 rounded-3xl md:rounded-none overflow-hidden shadow-sm`}>
         {mobileDetail && (
           <button
             className="flex shrink-0 items-center gap-1 border-b border-divider/70 px-4 py-2 text-sm font-medium text-primary md:hidden"

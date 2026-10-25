@@ -41,6 +41,8 @@ export default function FacebookCallbackPage() {
   const [error, setError] = useState("");
   const [connectingPageId, setConnectingPageId] = useState<string | null>(null);
   const [selectionToken, setSelectionToken] = useState("");
+  // Outcome for the Instagram account linked to the page just connected (null = none linked)
+  const [instagramResult, setInstagramResult] = useState<{ webhookError: string | null } | null>(null);
   const [connectedAssetsUsed, setConnectedAssetsUsed] = useState<number | null>(null);
   const [connectedAssetsLimit, setConnectedAssetsLimit] = useState<number | null>(null);
 
@@ -121,10 +123,12 @@ export default function FacebookCallbackPage() {
     setConnectingPageId(page.id);
     setStatus("connecting");
     try {
-      await api.post(API_ENDPOINTS.integrations.facebook.connectPage, {
+      const res: any = await api.post(API_ENDPOINTS.integrations.facebook.connectPage, {
         pageId: page.id,
         selectionToken,
       });
+      const ig = res?.data?.instagram ?? res?.instagram;
+      setInstagramResult(ig?.linked ? { webhookError: ig.webhookSubscribed === false ? ig.webhookError || "Meta rechazó la suscripción" : null } : null);
 
       setStatus("success");
       addToast({ title: `Página "${page.name}" conectada exitosamente`, color: "success" });
@@ -280,9 +284,16 @@ export default function FacebookCallbackPage() {
               <h2 className="text-lg font-bold text-success">¡Conexión Exitosa!</h2>
               <p className="text-sm text-default-500 mt-1">
                 Tu página de Facebook ha sido conectada. Los mensajes de Messenger{" "}
-                {pages.find(p => p.id === connectingPageId)?.instagramLinked && "e Instagram DMs "}
+                {instagramResult && "e Instagram "}
                 aparecerán automáticamente en tu Contact Center.
               </p>
+              {instagramResult?.webhookError && (
+                <p className="mx-auto mt-3 max-w-md rounded-xl border border-warning/30 bg-warning/10 p-3 text-xs text-warning-700 dark:text-warning">
+                  Instagram quedó conectado, pero Meta rechazó la suscripción a eventos en tiempo real ({instagramResult.webhookError}).
+                  Los comentarios los verás en Contact Center → Comentarios IG con el botón Actualizar. Revisa en Meta que la app tenga aprobados
+                  los permisos de Instagram y vuelve a conectar la página.
+                </p>
+              )}
             </div>
             <div className="flex gap-2 mt-2">
               <Button
