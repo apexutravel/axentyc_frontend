@@ -65,6 +65,7 @@ import { API_ENDPOINTS, API_URL } from "@/config/api";
 import { useWorkspaces } from "@/contexts/WorkspaceContext";
 import ActivityPanel from "@/components/crm/ActivityPanel";
 import InstagramComments from "@/components/contact-center/InstagramComments";
+import { InstagramRealtimeBanner } from "@/components/contact-center/InstagramRealtimeNote";
 import QuickReplyButton, { useQuickReplies } from "@/components/crm/QuickReplies";
 import { useSocket } from "@/hooks/useSocket";
 import { useAuth } from "@/contexts/AuthContext";
@@ -1887,6 +1888,7 @@ export default function ContactCenterPage() {
             </div>
           ) : (
             <>
+              {activeTab === 'instagram' && <InstagramRealtimeBanner />}
               <Input
                 placeholder="Buscar conversaciones..."
                 size="sm"

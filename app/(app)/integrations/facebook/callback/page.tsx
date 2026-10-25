@@ -42,7 +42,7 @@ export default function FacebookCallbackPage() {
   const [connectingPageId, setConnectingPageId] = useState<string | null>(null);
   const [selectionToken, setSelectionToken] = useState("");
   // Outcome for the Instagram account linked to the page just connected (null = none linked)
-  const [instagramResult, setInstagramResult] = useState<{ webhookError: string | null } | null>(null);
+  const [instagramResult, setInstagramResult] = useState<{ webhookError: string | null; appWebhookError: string | null } | null>(null);
   const [connectedAssetsUsed, setConnectedAssetsUsed] = useState<number | null>(null);
   const [connectedAssetsLimit, setConnectedAssetsLimit] = useState<number | null>(null);
 
@@ -128,7 +128,14 @@ export default function FacebookCallbackPage() {
         selectionToken,
       });
       const ig = res?.data?.instagram ?? res?.instagram;
-      setInstagramResult(ig?.linked ? { webhookError: ig.webhookSubscribed === false ? ig.webhookError || "Meta rechazó la suscripción" : null } : null);
+      setInstagramResult(
+        ig?.linked
+          ? {
+              webhookError: ig.webhookSubscribed === false ? ig.webhookError || "Meta rechazó la suscripción" : null,
+              appWebhookError: ig.appWebhook?.status === "error" ? ig.appWebhook.message : null,
+            }
+          : null,
+      );
 
       setStatus("success");
       addToast({ title: `Página "${page.name}" conectada exitosamente`, color: "success" });
@@ -287,6 +294,12 @@ export default function FacebookCallbackPage() {
                 {instagramResult && "e Instagram "}
                 aparecerán automáticamente en tu Contact Center.
               </p>
+              {instagramResult?.appWebhookError && (
+                <p className="mx-auto mt-3 max-w-md rounded-xl border border-warning/30 bg-warning/10 p-3 text-xs text-warning-700 dark:text-warning">
+                  Instagram quedó conectado, pero no se pudo activar el aviso instantáneo de Meta ({instagramResult.appWebhookError}).
+                  Los mensajes llegarán igual con unos segundos de retraso. Puedes reintentarlo con «Activar tiempo real» en Contact Center → Instagram.
+                </p>
+              )}
               {instagramResult?.webhookError && (
                 <p className="mx-auto mt-3 max-w-md rounded-xl border border-warning/30 bg-warning/10 p-3 text-xs text-warning-700 dark:text-warning">
                   Instagram quedó conectado, pero Meta rechazó la suscripción a eventos en tiempo real ({instagramResult.webhookError}).

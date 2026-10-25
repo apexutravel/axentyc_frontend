@@ -12,12 +12,14 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { API_URL } from "@/config/api";
 import { useSocket } from "@/hooks/useSocket";
+import { InstagramRealtimeNote } from "./InstagramRealtimeNote";
 
 interface IgAccount {
   accountId: string;
   accountName: string;
   webhookError?: string | null;
   lastWebhookAt?: string | null;
+  realtime?: { ok: boolean; error?: string | null } | null;
 }
 
 interface IgComment {
@@ -72,7 +74,7 @@ export default function InstagramComments() {
       const raw = res?.data?.accounts ?? res?.accounts ?? [];
       const list: IgAccount[] = raw
         .filter((a: any) => a.platform === "instagram" && a.status === "connected" && a.accountId)
-        .map((a: any) => ({ accountId: a.accountId, accountName: a.accountName, webhookError: a.metadata?.webhookError, lastWebhookAt: a.metadata?.lastWebhookAt }));
+        .map((a: any) => ({ accountId: a.accountId, accountName: a.accountName, webhookError: a.metadata?.webhookError, lastWebhookAt: a.metadata?.lastWebhookAt, realtime: a.metadata?.realtime }));
       setAccounts(list);
       setAccountId((current) => current || list[0]?.accountId || "");
     } catch {
@@ -257,21 +259,12 @@ export default function InstagramComments() {
               {accounts.map((a) => <SelectItem key={a.accountId}>{`@${a.accountName}`}</SelectItem>)}
             </Select>
           )}
-          {account && !account.webhookError && (
-            <p className="flex items-center gap-1.5 text-[11px] text-default-500">
-              <span className={`h-2 w-2 shrink-0 rounded-full ${account.lastWebhookAt ? "bg-success" : "bg-warning"}`} />
-              {account.lastWebhookAt
-                ? `Meta envía eventos en vivo · último ${formatDate(account.lastWebhookAt)}`
-                : "Meta aún no ha enviado eventos en vivo. Se revisa Instagram cada minuto, así que no pierdes mensajes, pero llegan con hasta 1 min de retraso."}
-            </p>
-          )}
-          {account?.webhookError && (
-            <div className="flex gap-2 rounded-xl border border-warning/30 bg-warning/10 p-2.5 text-[11px] text-warning-700 dark:text-warning">
-              <AlertTriangle className="mt-0.5 shrink-0" size={13} />
-              <span>
-                Los comentarios nuevos pueden no llegar en tiempo real: Meta rechazó la suscripción ({account.webhookError}). Aun así puedes verlos aquí con Actualizar. Vuelve a conectar la página para reintentar.
-              </span>
-            </div>
+          {account && (
+            <InstagramRealtimeNote
+              lastWebhookAt={account.lastWebhookAt}
+              realtime={account.realtime ?? (account.webhookError ? { ok: false, error: account.webhookError } : null)}
+              onRepaired={loadAccounts}
+            />
           )}
         </div>
 
